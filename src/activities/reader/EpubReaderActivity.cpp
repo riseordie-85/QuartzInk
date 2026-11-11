@@ -3205,9 +3205,16 @@ void EpubReaderActivity::loop() {
     return;
   }
 
-  // Enter reader menu activity.
-  if (!endOfBookMenuOpen && (confirmReleased || ReaderUtils::isTouchMenuGesture(mappedInput))) {
+  // Enter reader menu activity. QuartzInk: a tap in the middle of the page also
+  // opens it (the outer thirds still turn pages), so the menu does not need the
+  // board-specific swipe. Return so the same tap is not also read as a page turn.
+  const bool centerMenuTap = !atEndOfBook && touch.tapped && touch.x >= renderer.getScreenWidth() / 3 &&
+                             touch.x < (renderer.getScreenWidth() * 2) / 3 &&
+                             touch.y >= renderer.getScreenHeight() / 4 &&
+                             touch.y < (renderer.getScreenHeight() * 3) / 4;
+  if (!endOfBookMenuOpen && (confirmReleased || centerMenuTap || ReaderUtils::isTouchMenuGesture(mappedInput))) {
     openQuartzReaderMenu();
+    return;
   }
 
   if (!endOfBookMenuOpen && handleTouchDictionaryLookup()) {
