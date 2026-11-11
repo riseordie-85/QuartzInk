@@ -1,3 +1,9 @@
+## [QuartzInk Unreleased]
+
+### Changed
+
+- Opening the menu while reading now shows the Quartz reader chrome: a title bar with Home, Contents, Bookmark, Look up and Page settings, plus a book progress timeline. Page settings holds text size, font, line spacing, margins and alignment in one sheet; Advanced opens the full CrossInk reader menu. Button devices open straight into the sheet and move through it with the page buttons, Left/Right and Confirm.
+
 ## [v1.6.1] - 2026-10-03
 
 ### Added

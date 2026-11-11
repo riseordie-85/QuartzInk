@@ -53,6 +53,7 @@
 #include "PageWordGeometry.h"
 #include "ProgressMapper.h"
 #include "QrDisplayActivity.h"
+#include "QuartzReaderMenuActivity.h"
 #include "QuickActions.h"
 #include "ReaderFontLoading.h"
 #include "ReaderUtils.h"
@@ -2707,6 +2708,73 @@ void EpubReaderActivity::openReaderMenu() {
   });
 }
 
+void EpubReaderActivity::openQuartzReaderMenu() {
+  clearPendingManualPageTurns();
+  QuartzReaderMenuActivity::BookInfo info;
+  {
+    // Serialize EPUB metadata/file access with the render task.
+    RenderLock lock(*this);
+    const bool previewActive = activeFootnotePreview;
+    const int totalPages = section ? section->estimatedTotalPages() : 0;
+    int chapterPage = section ? section->currentPage + 1 : 0;
+    int chapterPageCount = totalPages;
+    bool chapterPageCountEstimated = section && (section->isBuilding() || section->isPartial());
+    if (section && !previewActive) {
+      float chapterProgress = 0.0f;
+      resolveChapterGroupPageProgress(chapterPage, chapterPageCount, chapterProgress, chapterPageCountEstimated);
+    }
+    info.chapterPage = static_cast<uint32_t>(std::max(0, chapterPage));
+    info.chapterPageCount = static_cast<uint32_t>(std::max(0, chapterPageCount));
+    info.bookProgressPercent = getCurrentBookProgressPercent();
+    if (epub) {
+      info.title = epub->getTitle();
+      const int tocIndex = epub->getTocIndexForSpineIndex(currentSpineIndex);
+      if (tocIndex >= 0 && tocIndex < epub->getTocItemsCount()) info.chapter = epub->getTocItem(tocIndex).title;
+      info.hasDictionary = !previewActive && Dictionary::exists(epub->getCachePath().c_str());
+    }
+    const float progress = (section && totalPages > 0) ? static_cast<float>(section->currentPage) / totalPages : 0.0f;
+    info.pageBookmarked = !previewActive && BOOKMARKS.hasBookmarkForPage(static_cast<uint16_t>(currentSpineIndex),
+                                                                         progress, totalPages > 0 ? totalPages : 1);
+  }
+  pauseReadingPaceTimer("quartz_menu");
+  auto menuActivity = makeUniqueNoThrow<QuartzReaderMenuActivity>(renderer, mappedInput, std::move(info),
+                                                                  saveReaderOptionsForBook, this);
+  if (!menuActivity) {
+    // Fall back to CrossInk's drawer rather than leaving the reader without a menu.
+    LOG_ERR("ERS", "Could not allocate Quartz reader menu");
+    resumeReadingPaceTimer("quartz_menu_oom");
+    openReaderMenu();
+    return;
+  }
+  startActivityForResult(std::move(menuActivity), [this](const ActivityResult& result) {
+    const auto* menu = std::get_if<MenuResult>(&result.data);
+    if (menu == nullptr) {
+      resumeReadingPaceTimer("quartz_menu_return");
+      requestUpdate();
+      return;
+    }
+    applyOrientation(menu->orientation);
+    if (menu->settingsChanged && hasReaderSettingsChange(menu->changeMask, ReaderSettingsChangeMask::Relayout)) {
+      ensureReaderSdFontLoaded(renderer);
+      RenderLock lock(*this);
+      prepareCurrentSectionForRelayout();
+      section.reset();  // Force re-layout with the new reader settings
+    }
+    resumeReadingPaceTimer("quartz_menu_return");
+    if (result.isCancelled || menu->action < 0) {
+      requestUpdate();
+      return;
+    }
+    const auto action = static_cast<EpubReaderMenuAction>(menu->action);
+    if (action == EpubReaderMenuAction::READER_OPTIONS) {
+      // Advanced (and SD-card fonts): CrossInk's full drawer.
+      openReaderMenu();
+      return;
+    }
+    onReaderMenuConfirm(action, false);
+  });
+}
+
 void EpubReaderActivity::showBuildPopup() {
   if (!buildPopupPending || !renderer.hasFrameBuffer()) return;
   GUI.drawPopup(renderer, tr(STR_INDEXING));
@@ -3139,7 +3207,7 @@ void EpubReaderActivity::loop() {
 
   // Enter reader menu activity.
   if (!endOfBookMenuOpen && (confirmReleased || ReaderUtils::isTouchMenuGesture(mappedInput))) {
-    openReaderMenu();
+    openQuartzReaderMenu();
   }
 
   if (!endOfBookMenuOpen && handleTouchDictionaryLookup()) {

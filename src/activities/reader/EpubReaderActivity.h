@@ -450,8 +450,10 @@ class EpubReaderActivity final : public Activity {
   static std::unique_ptr<Page> reloadDictionaryLookupPageCallback(void* context, int pageOffset);
   void onReaderMenuConfirm(EpubReaderMenuAction action, bool returnToReaderMenu = false,
                            const PendingOverlayResume* replacementResume = nullptr);
-  // Opens the reader menu for the current position (short-press Confirm)
+  // Opens CrossInk's full reader drawer (QuartzInk: reached from Advanced)
   void openReaderMenu();
+  // QuartzInk: opens the Quartz title bar / page settings menu (short-press Confirm, center tap)
+  void openQuartzReaderMenu();
   void applyOrientation(uint8_t orientation);
   void requestManualPageTurn(bool isForwardTurn, const char* source);
   bool drainPendingManualPageTurn();
