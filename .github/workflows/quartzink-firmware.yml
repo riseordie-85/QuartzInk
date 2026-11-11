@@ -1,0 +1,63 @@
+name: QuartzInk firmware
+
+# Builds flashable firmware for the X3 (default env) and X4 Pro on every push to
+# a feature branch or main, and attaches the .bin files to the run so they can be
+# downloaded from the Actions tab and flashed with the CrossPoint web flasher.
+on:
+  push:
+    branches: [main, "feat/**", "fix/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: quartzink-firmware-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: default
+            device: x3-x4
+          - environment: x4-pro
+            device: x4-pro
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio/packages
+            ~/.platformio/platforms
+          key: ${{ runner.os }}-platformio-py3.14-core6.1.19-${{ matrix.environment }}-${{ hashFiles('platformio.ini', 'platformio.local.example.ini') }}
+
+      - name: Install PlatformIO Core
+        run: uv pip install --system -U https://github.com/pioarduino/platformio-core/archive/refs/tags/v6.1.19.zip
+
+      - name: Build ${{ matrix.environment }} firmware
+        run: |
+          set -euo pipefail
+          pio run -j1 -e ${{ matrix.environment }} | tee pio-${{ matrix.environment }}.log
+          grep -E "RAM:\s|Flash:\s" pio-${{ matrix.environment }}.log >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: quartzink-${{ matrix.device }}-${{ github.sha }}
+          path: .pio/build/${{ matrix.environment }}/firmware*.bin
+          if-no-files-found: error
