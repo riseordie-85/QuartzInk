@@ -8,7 +8,7 @@ available while CrossInk is in File Transfer or Calibre Wireless mode.
 - UDP discovery listener: port 8134
 - WebDAV: port 80, handled by the same HTTP server
 
-Examples use `crosspoint.local`. If mDNS does not resolve on your network, use
+Examples use `quartzink.local`. If mDNS does not resolve on your network, use
 the IP address shown on the device screen.
 
 ## HTTP Pages
@@ -26,7 +26,7 @@ the IP address shown on the device screen.
 ### `GET /api/status`
 
 ```bash
-curl http://crosspoint.local/api/status
+curl http://quartzink.local/api/status
 ```
 
 Response:
@@ -62,7 +62,7 @@ Response:
 Lists files and folders under a directory.
 
 ```bash
-curl "http://crosspoint.local/api/files?path=/Books"
+curl "http://quartzink.local/api/files?path=/Books"
 ```
 
 Query parameters:
@@ -88,7 +88,7 @@ enabled. `System Volume Information` and `XTCache` are always hidden/protected.
 Downloads a file from the SD card.
 
 ```bash
-curl -OJ "http://crosspoint.local/download?path=/Books/MyBook.epub"
+curl -OJ "http://quartzink.local/download?path=/Books/MyBook.epub"
 ```
 
 Query parameters:
@@ -106,7 +106,7 @@ downloaded. EPUB files are served as `application/epub+zip`; other files use
 Uploads a file with HTTP multipart form data.
 
 ```bash
-curl -X POST -F "file=@mybook.epub" "http://crosspoint.local/upload?path=/Books"
+curl -X POST -F "file=@mybook.epub" "http://quartzink.local/upload?path=/Books"
 ```
 
 Query parameters:
@@ -132,7 +132,7 @@ Notes:
 Creates a folder.
 
 ```bash
-curl -X POST -d "name=NewFolder&path=/" http://crosspoint.local/mkdir
+curl -X POST -d "name=NewFolder&path=/" http://quartzink.local/mkdir
 ```
 
 Form parameters:
@@ -147,7 +147,7 @@ Form parameters:
 Renames a file.
 
 ```bash
-curl -X POST -d "path=/Books/old.epub&name=new.epub" http://crosspoint.local/rename
+curl -X POST -d "path=/Books/old.epub&name=new.epub" http://quartzink.local/rename
 ```
 
 Form parameters:
@@ -165,7 +165,7 @@ cleared before the rename.
 Moves a file into an existing folder.
 
 ```bash
-curl -X POST -d "path=/Books/mybook.epub&dest=/Read" http://crosspoint.local/move
+curl -X POST -d "path=/Books/mybook.epub&dest=/Read" http://quartzink.local/move
 ```
 
 Form parameters:
@@ -183,8 +183,8 @@ cleared before the move.
 Deletes one or more files or empty folders.
 
 ```bash
-curl -X POST -d "path=/Books/mybook.epub" http://crosspoint.local/delete
-curl -X POST -d 'paths=["/Books/old.epub","/OldFolder"]' http://crosspoint.local/delete
+curl -X POST -d "path=/Books/mybook.epub" http://quartzink.local/delete
+curl -X POST -d 'paths=["/Books/old.epub","/OldFolder"]' http://quartzink.local/delete
 ```
 
 Form parameters:
@@ -205,7 +205,7 @@ Returns a streamed JSON array of editable settings. Each item contains common
 fields plus type-specific fields.
 
 ```bash
-curl http://crosspoint.local/api/settings
+curl http://quartzink.local/api/settings
 ```
 
 Example item:
@@ -242,7 +242,7 @@ Applies a partial settings update from a JSON object.
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"fontSize":2,"showHiddenFiles":1}' \
-  http://crosspoint.local/api/settings
+  http://quartzink.local/api/settings
 ```
 
 Successful response:
@@ -258,7 +258,7 @@ Applied 2 setting(s)
 Lists installed SD-card font families.
 
 ```bash
-curl http://crosspoint.local/api/fonts
+curl http://quartzink.local/api/fonts
 ```
 
 Response:
@@ -286,7 +286,7 @@ Uploads one `.cpfont` file into a family folder.
 curl -X POST \
   -F "family=Literata" \
   -F "file=@Literata_12.cpfont" \
-  http://crosspoint.local/api/fonts/upload
+  http://quartzink.local/api/fonts/upload
 ```
 
 The handler validates the family name, `.cpfont` filename, and `CPFONT` magic
@@ -306,7 +306,7 @@ Deletes an installed font family.
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"family":"Literata"}' \
-  http://crosspoint.local/api/fonts/delete
+  http://quartzink.local/api/fonts/delete
 ```
 
 Successful response:
@@ -322,7 +322,7 @@ Successful response:
 Lists saved OPDS servers. Passwords are never returned.
 
 ```bash
-curl http://crosspoint.local/api/opds
+curl http://quartzink.local/api/opds
 ```
 
 Response:
@@ -351,7 +351,7 @@ is preserved. `filenameFormat` is either `author_title` (the default) or
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"name":"My Catalog","url":"http://calibre.local:8080/opds","username":"reader","password":"secret"}' \
-  http://crosspoint.local/api/opds
+  http://quartzink.local/api/opds
 ```
 
 ### `POST /api/opds/delete`
@@ -362,7 +362,7 @@ Deletes an OPDS server by index.
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"index":0}' \
-  http://crosspoint.local/api/opds/delete
+  http://quartzink.local/api/opds/delete
 ```
 
 ## Wi-Fi Credential API
@@ -372,7 +372,7 @@ curl -X POST \
 Lists saved Wi-Fi networks. Passwords are never returned.
 
 ```bash
-curl http://crosspoint.local/api/wifi
+curl http://quartzink.local/api/wifi
 ```
 
 Response:
@@ -398,7 +398,7 @@ preserved.
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"ssid":"HomeWiFi","password":"secret"}' \
-  http://crosspoint.local/api/wifi
+  http://quartzink.local/api/wifi
 ```
 
 ### `POST /api/wifi/delete`
@@ -409,7 +409,7 @@ Deletes a saved Wi-Fi network by index.
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"index":0}' \
-  http://crosspoint.local/api/wifi/delete
+  http://quartzink.local/api/wifi/delete
 ```
 
 ## WebSocket Upload
@@ -422,7 +422,7 @@ Calibre plugin workflows.
 Connection:
 
 ```text
-ws://crosspoint.local:81/
+ws://quartzink.local:81/
 ```
 
 Protocol:
@@ -491,7 +491,7 @@ The final field is the WebSocket upload port.
 ### Station Mode (STA)
 
 - Device joins an existing 2.4 GHz Wi-Fi network.
-- `crosspoint.local` is advertised with mDNS when available.
+- `quartzink.local` is advertised with mDNS when available.
 - `/api/status` returns `"mode": "STA"` and RSSI in dBm.
 
 ### Access Point Mode (AP)

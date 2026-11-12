@@ -25,6 +25,8 @@
 - The reader menu's title bar has Home, Look up, Contents, Bookmark and Page settings. Without a dictionary for the book, Look up opens the dictionary picker.
 - Page settings' Advanced page lists line and word spacing, hyphenation, anti-aliasing, focus reading, guide dots, top/bottom and side margins, paragraph spacing and indents, orientation, images, publisher page numbers and the book's own styles in one scrolling list, with All reader options opening the full CrossInk menu.
 
+- The reader's network name is **quartzink** (`http://quartzink.local/`), and routers list it as QuartzInk-<id>.
+
 ### Fixed
 
 - Page Overlay sleep screens no longer turn the page's text into replacement symbols when reading in an SD-card font: the sleep-page redraw now prepares the page's glyphs first, as the reader does.
