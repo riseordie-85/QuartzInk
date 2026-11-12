@@ -388,9 +388,12 @@ void QuartzHomeUi::drawCurrent(UiScreen& screen, const fui::Rect rect) {
   const int16_t bodyH = target.lineHeight(fui::FONT_SLOT_BODY);
   const int16_t smallH = target.lineHeight(fui::FONT_SLOT_SMALL);
   int16_t y = inner.y;
-  target.text(fui::Rect{textX, y, textW, bodyH}, book.title.c_str(),
-              textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left, false, true));
-  y = static_cast<int16_t>(y + bodyH);
+  // Up to two lines of title; a short title takes one, so the author moves up.
+  const auto titleStyle = textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left, false, true, 2);
+  const bool twoLineTitle = target.measureText(fui::FONT_SLOT_BODY, book.title.c_str(), titleStyle).width > textW;
+  const int16_t titleH = static_cast<int16_t>(bodyH * (twoLineTitle ? 2 : 1));
+  target.text(fui::Rect{textX, y, textW, titleH}, book.title.c_str(), titleStyle);
+  y = static_cast<int16_t>(y + titleH);
   if (!book.author.empty()) {
     target.text(fui::Rect{textX, y, textW, bodyH}, book.author.c_str(),
                 textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left));

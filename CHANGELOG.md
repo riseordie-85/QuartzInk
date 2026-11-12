@@ -16,6 +16,11 @@
 - Look up is always in the reader menu's title bar; without a dictionary for the book it opens the dictionary picker.
 - Page settings' Advanced page lists line and word spacing, hyphenation, anti-aliasing, focus reading, guide dots, top/bottom and side margins, paragraph spacing and indents, orientation, images, publisher page numbers and the book's own styles in one scrolling list, with All reader options opening the full CrossInk menu.
 
+### Fixed
+
+- Moving a book with File Transfer's Move button keeps its reading progress, reading stats, bookmarks and clippings, the same as Rename; it used to clear them. The Move dialog also suggests folders one level down, such as `/Books/Adventure`.
+- The current book's title on Home wraps to a second line instead of cutting off.
+
 ## [v1.6.1] - 2026-10-03
 
 ### Added

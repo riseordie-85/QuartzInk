@@ -5717,11 +5717,19 @@ async function loadMoveFolderOptions() {
   }
 
   const rootFiles = await fetchFolders("/");
-  rootFiles.forEach((file) => {
-    if (file.isDirectory) {
-      options.add("/" + file.name);
-    }
-  });
+  const rootFolders = rootFiles.filter((file) => file.isDirectory && !file.name.startsWith("."));
+  rootFolders.forEach((file) => options.add("/" + file.name));
+
+  // One level deeper too, so shelves like /Books/Adventure can be picked from
+  // anywhere. Capped so a card with many top-level folders stays quick.
+  for (const folder of rootFolders.slice(0, 12)) {
+    const children = await fetchFolders("/" + folder.name);
+    children.forEach((file) => {
+      if (file.isDirectory && !file.name.startsWith(".")) {
+        options.add("/" + folder.name + "/" + file.name);
+      }
+    });
+  }
 
   if (currentPath !== "/") {
     const currentFiles = await fetchFolders(currentPath);
