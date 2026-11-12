@@ -40,6 +40,14 @@
 #include "fontIds.h"
 #include "util/BookMoveUtils.h"
 
+// QuartzInk: Page Overlay, Custom and Cover + Custom all draw pinned PNGs, so
+// pinning one only switches the mode away from the others.
+static bool sleepModeUsesPngImages() {
+  return SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY ||
+         SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::CUSTOM ||
+         SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM;
+}
+
 namespace fui = freeink::ui;
 
 namespace {
@@ -583,7 +591,7 @@ void FileBrowserActivity::pinSleepFavorite(const std::string& fullPath) {
 
   // PNG sleep images only render in Page Overlay mode, so make selecting one
   // from the File Browser immediately usable.
-  if (FsHelpers::hasPngExtension(fullPath) && SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY) {
+  if (FsHelpers::hasPngExtension(fullPath) && !sleepModeUsesPngImages()) {
     SETTINGS.sleepScreen = CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY;
     if (!SETTINGS.saveToFile()) {
       LOG_ERR("FileBrowser", "Failed to save Page Overlay mode for PNG sleep image");

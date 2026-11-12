@@ -649,7 +649,7 @@ The **Sleep Screen** setting controls what is displayed when the device goes to 
 | **Light**          | The CrossInk logo on a white background.                                                                                                               |
 | **Custom**         | A custom image from the SD card (see below). Falls back to **Dark** if no custom image is found.                                                       |
 | **Cover**          | The cover of the currently open book. Falls back to **Dark** if no book is open.                                                                       |
-| **Cover + Custom** | The cover of the currently open book, shown only while actively reading. Falls back to **Custom** behavior when not reading.                           |
+| **Cover + Custom** | While reading: the book's cover with a PNG overlay (a pinned PNG or one from the sleep folder) on top, or the plain cover if there is none. Elsewhere: **Custom**. |
 | **Page Overlay**   | Keeps the current reader page visible and draws a sleep wallpaper over it. If no wallpaper is available, the page remains visible while reading.       |
 | **Minimal**        | A compact sleep screen based on the Minimal home layout.                                                                                               |
 | **Minimal Stats**  | A compact sleep screen with recent reading stats, on supported devices; falls back to **Minimal** while tracking is off for the device or recent book. |

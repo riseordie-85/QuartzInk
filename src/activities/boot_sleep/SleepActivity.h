@@ -31,7 +31,11 @@ class SleepActivity final : public Activity {
   bool renderBitmapSleepScreen(Bitmap& bitmap) const;
   void renderLastScreenSleepScreen() const;
   void renderBlankSleepScreen() const;
-  void renderOverlaySleepScreen() const;
+  // What Page Overlay draws its PNG/BMP over.
+  enum class OverlayBackground : uint8_t { ReaderPage, Cover, Blank };
+  void renderOverlaySleepScreen(OverlayBackground background) const;
+  // Draws the open book's cover in black and white, without refreshing.
+  bool drawCoverBackground(const std::string& bookPath) const;
   bool canSnapshotOverlayBackground = false;
   bool overlayBackgroundBufferStored = false;
   std::string currentBookPath;

@@ -981,3 +981,4 @@ STR_QZ_NO_SHELVES: "Make folders inside /Books on the SD card and each one becom
 STR_QZ_APPLY_ALL: "Apply to all books"
 STR_QZ_APPLY_ALL_HINT: "Make these the settings for every book"
 STR_QZ_FORK_LINE: "A CrossPoint/CrossInk Fork"
+STR_QZ_CHOOSE_SLEEP_IMAGE: "Choose Sleep Image"

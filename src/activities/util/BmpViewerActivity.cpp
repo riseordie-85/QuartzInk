@@ -19,6 +19,14 @@
 #include "components/UITheme.h"
 #include "fontIds.h"
 
+// QuartzInk: Page Overlay, Custom and Cover + Custom all draw pinned PNGs, so
+// pinning one only switches the mode away from the others.
+static bool sleepModeUsesPngImages() {
+  return SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY ||
+         SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::CUSTOM ||
+         SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM;
+}
+
 namespace {
 
 bool isViewableImageFile(const std::string& filename) {
@@ -278,8 +286,7 @@ void BmpViewerActivity::doSetSleepCover() {
 
     // PNG covers only render in Page Overlay sleep mode; other modes silently skip them (see
     // selectPinnedSleepImage() in SleepActivity.cpp), so switch the setting for the user.
-    if (FsHelpers::hasPngExtension(filePath) &&
-        SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY) {
+    if (FsHelpers::hasPngExtension(filePath) && !sleepModeUsesPngImages()) {
       SETTINGS.sleepScreen = CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY;
       if (SETTINGS.saveToFile()) {
         LOG_INF("BmpViewer", "Switched sleep wallpaper mode to Page Overlay for PNG cover");
@@ -309,7 +316,7 @@ void BmpViewerActivity::pinSleepFavorite() {
 
   // Keep the context-menu action consistent with Confirm: PNG sleep images
   // only render in Page Overlay mode.
-  if (FsHelpers::hasPngExtension(filePath) && SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY) {
+  if (FsHelpers::hasPngExtension(filePath) && !sleepModeUsesPngImages()) {
     SETTINGS.sleepScreen = CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY;
     if (!SETTINGS.saveToFile()) {
       LOG_ERR("BmpViewer", "Failed to save Page Overlay mode for PNG sleep image");

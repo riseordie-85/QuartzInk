@@ -1,8 +1,10 @@
 #include "SettingsActivity.h"
 
 #include <BoardConfig.h>
+#include <FsHelpers.h>
 #include <GfxRenderer.h>
 #include <HalGPIO.h>
+#include <HalStorage.h>
 #include <I18n.h>
 #include <Logging.h>
 #include <WiFi.h>
@@ -21,8 +23,10 @@
 #include "ClockOffsetActivity.h"
 #include "ClockSyncActivity.h"
 #include "CrossPointSettings.h"
+#include "CrossPointState.h"
 #include "DeviceCapabilities.h"
 #include "FontSelectionActivity.h"
+#include "activities/ActivityManager.h"
 #if CROSSINK_SCALABLE_FONTS
 #include "TtfRenderOptionsActivity.h"
 #endif
@@ -1189,6 +1193,23 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::SdFirmwareUpdate:
         startActivityForResult(std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInput), resultHandler);
         break;
+      case SettingAction::ChooseSleepImage: {
+        // Open the folder sleep images come from; hold an image there and
+        // choose Set Sleep Screen. The hidden /.sleep folder opens too.
+        std::string folder = APP_STATE.preferredSleepFolderPath;
+        char resolved[16];
+        if (folder.empty() || !Storage.exists(folder.c_str())) {
+          if (FsHelpers::resolveRootDirectoryIgnoreCase("/.sleep", resolved, sizeof(resolved)) ||
+              FsHelpers::resolveRootDirectoryIgnoreCase("/sleep", resolved, sizeof(resolved))) {
+            folder = resolved;
+          } else {
+            folder = "/";
+          }
+        }
+        SETTINGS.saveToFile();
+        activityManager.goToFileBrowser(folder);
+        return;
+      }
       case SettingAction::DownloadFonts:
         silentRestartToManageFonts();
         break;

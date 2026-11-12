@@ -1034,6 +1034,8 @@ inline std::vector<SettingInfo> buildDisplaySleepSettingsList(const std::vector<
   addSleepSetting(StrId::STR_SLEEP_COVER_MODE, StrId::STR_SLEEP_COVER_MODE_SHORT);
   addSleepSetting(StrId::STR_SLEEP_COVER_FILTER, StrId::STR_SLEEP_COVER_FILTER_SHORT);
   addSleepSetting(StrId::STR_QUICK_RESUME_TIMEOUT, StrId::STR_QUICK_RESUME_TIMEOUT);
+  // QuartzInk: browse the sleep folder (even the hidden /.sleep) to pin an image.
+  sleepSettings.push_back(SettingInfo::Action(StrId::STR_QZ_CHOOSE_SLEEP_IMAGE, SettingAction::ChooseSleepImage));
 
   return sleepSettings;
 }

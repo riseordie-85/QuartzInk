@@ -566,13 +566,15 @@ void SleepActivity::onEnter() {
     case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER):
       return renderCoverSleepScreen();
     case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM):
+      // QuartzInk: in a book, the cover with a PNG overlay (frame) on top;
+      // elsewhere, the custom image.
       if (APP_STATE.lastSleepFromReader) {
-        return renderCoverSleepScreen();
+        return renderOverlaySleepScreen(OverlayBackground::Cover);
       } else {
         return renderCustomSleepScreen();
       }
     case (CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY):
-      return renderOverlaySleepScreen();
+      return renderOverlaySleepScreen(OverlayBackground::ReaderPage);
     case (CrossPointSettings::SLEEP_SCREEN_MODE::READING_STATS_SLEEP):
       if (!BookStatsTracking::isEnabled(bookStatsCachePathFor(recentBookPath))) return renderMinimalSleepScreen();
       return renderReadingStatsSleepScreen();
@@ -624,6 +626,13 @@ bool SleepActivity::rendersBeforeExit() const {
 }
 
 void SleepActivity::renderCustomSleepScreen() const {
+  // A pinned PNG (often a transparent frame) is drawn on white; the BMP-only
+  // custom path below cannot decode PNGs.
+  if (FsHelpers::hasPngExtension(APP_STATE.favoriteSleepImagePath) &&
+      Storage.exists(APP_STATE.favoriteSleepImagePath.c_str())) {
+    return renderOverlaySleepScreen(OverlayBackground::Blank);
+  }
+
   const auto tryRenderSelection = [this](const SleepImageSelection& selection) {
     FsFile file;
     if (!Storage.openFileForRead("SLP", selection.path, file)) {
@@ -715,12 +724,21 @@ void SleepActivity::renderDefaultSleepScreen() const {
   renderer.displayBuffer(HalDisplay::HALF_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }
 
-bool SleepActivity::renderBitmapSleepScreen(Bitmap& bitmap) const {
-  int x, y;
-  const auto pageWidth = renderer.getScreenWidth();
-  const auto pageHeight = renderer.getScreenHeight();
-  float cropX = 0, cropY = 0;
+namespace {
+struct SleepBitmapPlacement {
+  int x = 0;
+  int y = 0;
+  float cropX = 0;
+  float cropY = 0;
+};
 
+// Where a full-screen sleep bitmap goes, honoring Cover Mode (Fit or Crop).
+SleepBitmapPlacement placeSleepBitmap(Bitmap& bitmap, const int pageWidth, const int pageHeight) {
+  SleepBitmapPlacement placement;
+  int& x = placement.x;
+  int& y = placement.y;
+  float& cropX = placement.cropX;
+  float& cropY = placement.cropY;
   // Keep error diffusion on the screen-sized grid. Resampling an already
   // dithered source makes the source pattern alias into regular seams.
   if (SETTINGS.sleepScreenCoverMode == CrossPointSettings::SLEEP_SCREEN_COVER_MODE::FIT &&
@@ -759,6 +777,19 @@ bool SleepActivity::renderBitmapSleepScreen(Bitmap& bitmap) const {
     x = (pageWidth - bitmap.getWidth()) / 2;
     y = (pageHeight - bitmap.getHeight()) / 2;
   }
+
+  return placement;
+}
+}  // namespace
+
+bool SleepActivity::renderBitmapSleepScreen(Bitmap& bitmap) const {
+  const auto pageWidth = renderer.getScreenWidth();
+  const auto pageHeight = renderer.getScreenHeight();
+  const SleepBitmapPlacement placement = placeSleepBitmap(bitmap, pageWidth, pageHeight);
+  const int x = placement.x;
+  const int y = placement.y;
+  const float cropX = placement.cropX;
+  const float cropY = placement.cropY;
 
   renderer.clearScreen();
 
@@ -813,6 +844,35 @@ bool SleepActivity::renderBitmapSleepScreen(Bitmap& bitmap) const {
   renderer.displayGrayBuffer(TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
   renderer.setRenderMode(GfxRenderer::BW);
   return true;
+}
+
+bool SleepActivity::drawCoverBackground(const std::string& bookPath) const {
+  // A black-and-white cover, so a PNG overlay's gray planes can be laid over it.
+  const bool cropped = SETTINGS.sleepScreenCoverMode == CrossPointSettings::SLEEP_SCREEN_COVER_MODE::CROP;
+  std::string coverBmpPath = SleepCoverAssets::cachedCoverPathFor(bookPath, cropped, false);
+  if (coverBmpPath.empty() && SleepCoverAssets::prepareFullCoverForPath(bookPath, cropped, &renderer, false)) {
+    coverBmpPath = SleepCoverAssets::cachedCoverPathFor(bookPath, cropped, false);
+  }
+  if (coverBmpPath.empty()) return false;
+
+  FsFile file;
+  if (!Storage.openFileForRead("SLP", coverBmpPath, file)) return false;
+  Bitmap bitmap(file, true, false);
+  bool drawn = false;
+  if (bitmap.parseHeaders() == BmpReaderError::Ok) {
+    const SleepBitmapPlacement placement =
+        placeSleepBitmap(bitmap, renderer.getScreenWidth(), renderer.getScreenHeight());
+    renderer.clearScreen();
+    drawn = renderer.drawBitmap(bitmap, placement.x, placement.y, renderer.getScreenWidth(), renderer.getScreenHeight(),
+                                placement.cropX, placement.cropY);
+    if (drawn &&
+        SETTINGS.sleepScreenCoverFilter == CrossPointSettings::SLEEP_SCREEN_COVER_FILTER::INVERTED_BLACK_AND_WHITE) {
+      renderer.invertScreen();
+    }
+  }
+  file.close();
+  LOG_DBG("SLP", "Cover background for overlay %s: %s", drawn ? "drawn" : "failed", coverBmpPath.c_str());
+  return drawn;
 }
 
 void SleepActivity::renderCoverSleepScreen() const {
@@ -976,13 +1036,15 @@ void SleepActivity::renderBlankSleepScreen() const {
   renderer.displayBuffer(HalDisplay::HALF_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
 }
 
-void SleepActivity::renderOverlaySleepScreen() const {
+void SleepActivity::renderOverlaySleepScreen(const OverlayBackground background) const {
   // Overlay pictures always use portrait orientation regardless of the reader's orientation preference.
   const auto savedOrientation = renderer.getOrientation();
   renderer.setOrientation(GfxRenderer::Portrait);
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
-  const bool shouldUseReaderPageBackground = canSnapshotOverlayBackground;
+  const bool coverBackground = background == OverlayBackground::Cover;
+  const bool shouldUseReaderPageBackground =
+      background == OverlayBackground::ReaderPage && canSnapshotOverlayBackground;
   const std::string path = shouldUseReaderPageBackground
                                ? (currentBookPath.empty() ? APP_STATE.openEpubPath : currentBookPath)
                                : std::string{};
@@ -1010,7 +1072,15 @@ void SleepActivity::renderOverlaySleepScreen() const {
 
   // Step 1: Restore the screen that was visible before the sleep popup. When
   // that snapshot is unavailable in the reader, rebuild from the saved position.
-  if (overlayBackgroundBufferStored) {
+  if (coverBackground) {
+    const std::string& bookPath = currentBookPath.empty() ? APP_STATE.openEpubPath : currentBookPath;
+    backgroundAvailable = !bookPath.empty() && drawCoverBackground(bookPath);
+    if (!backgroundAvailable) {
+      // No cover to frame: Cover + Custom shows the custom image instead.
+      renderer.setOrientation(savedOrientation);
+      return renderCustomSleepScreen();
+    }
+  } else if (background == OverlayBackground::ReaderPage && overlayBackgroundBufferStored) {
     renderer.restoreBwBuffer();
     backgroundAvailable = true;
   } else if (shouldUseReaderPageBackground && !path.empty()) {
@@ -1207,6 +1277,11 @@ void SleepActivity::renderOverlaySleepScreen() const {
   bool overlayCandidateFailed = false;
   SleepImageSelection selection;
   auto trySelectedOverlay = [&](const SleepImageSelection& image) {
+    if (coverBackground && !image.isPng) {
+      // Over a cover only a transparent PNG makes sense; a BMP would hide it.
+      LOG_DBG("SLP", "Skipping non-PNG overlay over cover: %s", image.path.c_str());
+      return;
+    }
     LOG_INF("SLP", "Selected overlay image: %s", image.path.c_str());
     const OverlayDrawResult result = image.isPng ? tryDrawPngOverlay(image.path) : tryDrawOverlay(image.path);
     overlayDrawn = result == OverlayDrawResult::Drawn;
@@ -1233,7 +1308,7 @@ void SleepActivity::renderOverlaySleepScreen() const {
     trySelectedOverlay(selection);
   }
 
-  if (!overlayDrawn && !pngOverlayFallbackMustUseDefault) {
+  if (!overlayDrawn && !pngOverlayFallbackMustUseDefault && !coverBackground) {
     const OverlayDrawResult result = tryDrawOverlay("/sleep.bmp");
     overlayDrawn = result == OverlayDrawResult::Drawn;
     overlayCandidateFailed = overlayCandidateFailed || result == OverlayDrawResult::Failed;
@@ -1244,6 +1319,12 @@ void SleepActivity::renderOverlaySleepScreen() const {
     overlayCandidateFailed = overlayCandidateFailed || result == OverlayDrawResult::Failed;
   }
 
+  if (!overlayDrawn && coverBackground) {
+    // No frame to draw: show the plain cover, with its full grayscale.
+    LOG_DBG("SLP", "No PNG overlay for the cover; showing the cover alone");
+    renderer.setOrientation(savedOrientation);
+    return renderCoverSleepScreen();
+  }
   if (!overlayDrawn) {
     if (overlayCandidateFailed) {
       LOG_ERR("SLP", "Overlay image was found but could not be drawn; falling back to default sleep screen");
