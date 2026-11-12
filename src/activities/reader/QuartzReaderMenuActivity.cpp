@@ -43,6 +43,10 @@ constexpr uint8_t MARGIN_PRESETS[] = {5, 18, 36};
 constexpr uint8_t ALIGN_PRESETS[] = {CrossPointSettings::JUSTIFIED, CrossPointSettings::LEFT_ALIGN,
                                      CrossPointSettings::BOOK_STYLE};
 constexpr uint8_t SPACING_LEGACY[] = {CrossPointSettings::TIGHT, CrossPointSettings::NORMAL, CrossPointSettings::WIDE};
+// Extra word spacing (0-4) that goes with each line-spacing preset. Picking a
+// preset sets both, so a leftover Word Spacing value from Advanced cannot leave
+// wide gaps between words once the text is no longer justified.
+constexpr uint8_t SPACING_WORD[] = {0, 0, 1};
 
 const fui::Paint BLACK = fui::Paint::solid(fui::Color::Black);
 const fui::Paint WHITE = fui::Paint::solid(fui::Color::White);
@@ -111,6 +115,7 @@ QuartzReaderMenuActivity::QuickSettings QuartzReaderMenuActivity::captureSetting
   std::strncpy(value.sdFontFamilyName, SETTINGS.sdFontFamilyName, sizeof(value.sdFontFamilyName) - 1);
   value.pointSize = SETTINGS.readerFontPointSize;
   value.lineHeightPercent = SETTINGS.lineHeightPercent;
+  value.wordSpacing = SETTINGS.wordSpacing;
   value.marginHorizontal = SETTINGS.screenMarginHorizontal;
   value.alignment = SETTINGS.paragraphAlignment;
   return value;
@@ -122,6 +127,7 @@ void QuartzReaderMenuActivity::applySettings() const {
   SETTINGS.sdFontFamilyName[sizeof(SETTINGS.sdFontFamilyName) - 1] = '\0';
   SETTINGS.readerFontPointSize = current.pointSize;
   SETTINGS.lineHeightPercent = current.lineHeightPercent;
+  SETTINGS.wordSpacing = current.wordSpacing;
   SETTINGS.screenMarginHorizontal = current.marginHorizontal;
   SETTINGS.paragraphAlignment = current.alignment;
 }
@@ -130,7 +136,8 @@ bool QuartzReaderMenuActivity::settingsChanged() const {
   return current.fontFamily != initial.fontFamily ||
          std::strcmp(current.sdFontFamilyName, initial.sdFontFamilyName) != 0 ||
          current.pointSize != initial.pointSize || current.lineHeightPercent != initial.lineHeightPercent ||
-         current.marginHorizontal != initial.marginHorizontal || current.alignment != initial.alignment;
+         current.wordSpacing != initial.wordSpacing || current.marginHorizontal != initial.marginHorizontal ||
+         current.alignment != initial.alignment;
 }
 
 void QuartzReaderMenuActivity::loadFontSizes() {
@@ -186,7 +193,7 @@ int QuartzReaderMenuActivity::selectedOption(const Row row) const {
       return current.fontFamily == CrossPointSettings::BITTER ? 1 : 0;
     case Row::Spacing:
       for (uint8_t i = 0; i < 3; ++i) {
-        if (spacingPreset(i) == current.lineHeightPercent) return i;
+        if (spacingPreset(i) == current.lineHeightPercent && SPACING_WORD[i] == current.wordSpacing) return i;
       }
       return -1;
     case Row::Margins:
@@ -224,6 +231,7 @@ void QuartzReaderMenuActivity::chooseOption(const Row row, const uint8_t option)
       break;
     case Row::Spacing:
       current.lineHeightPercent = spacingPreset(option);
+      current.wordSpacing = SPACING_WORD[option];
       break;
     case Row::Margins:
       current.marginHorizontal = MARGIN_PRESETS[option];

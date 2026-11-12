@@ -49,6 +49,7 @@ class QuartzReaderMenuActivity final : public Activity {
     char sdFontFamilyName[64] = {};
     uint8_t pointSize = 0;
     uint8_t lineHeightPercent = 0;
+    uint8_t wordSpacing = 0;
     uint8_t marginHorizontal = 0;
     uint8_t alignment = 0;
   };
