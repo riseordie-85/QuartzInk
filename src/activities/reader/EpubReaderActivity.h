@@ -415,6 +415,9 @@ class EpubReaderActivity final : public Activity {
   bool beginGlobalSettingsEdit();
   void endGlobalSettingsEdit();
   static void saveReaderOptionsForBook(void* ctx);
+  static void applyReaderSettingsToAllBooksForReader(void* ctx);
+  // Makes the current reader settings the defaults and drops every EPUB's own overrides.
+  void applyReaderSettingsToAllBooks();
   static void saveDictionaryFontForBookReader(void* ctx, const char* familyName, uint8_t pointSize);
   static void persistReaderSdFontSettingsForBook(void* ctx);
   static void saveGlobalSettingsForBookReader(void* ctx);

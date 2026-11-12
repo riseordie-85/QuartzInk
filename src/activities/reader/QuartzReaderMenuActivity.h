@@ -34,7 +34,8 @@ class QuartzReaderMenuActivity final : public Activity {
   };
 
   QuartzReaderMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, BookInfo book,
-                           SaveSettingsCallback saveSettings, void* saveSettingsContext);
+                           SaveSettingsCallback saveSettings, void* saveSettingsContext,
+                           SaveSettingsCallback applyToAllBooks = nullptr);
 
   void onEnter() override;
   void loop() override;
@@ -92,10 +93,10 @@ class QuartzReaderMenuActivity final : public Activity {
   enum class AdvKind : uint8_t { Header, Stepper, Toggle, Cycle, Link };
   static constexpr uint8_t ADV_ROW_COUNT = static_cast<uint8_t>(Adv::Count);
 
-  enum class Row : uint8_t { Toolbar, Size, Font, Spacing, Margins, Align, Advanced, Count };
+  enum class Row : uint8_t { Toolbar, Size, Font, Spacing, Margins, Align, ApplyAll, Advanced, Count };
   enum class Tool : uint8_t { Home, Contents, Bookmark, Lookup, PageSettings };
 
-  using UiApp = freeink::ui::FreeInkApp<48, 10>;  // 9 actions below; keep MaxHandlers >= that count
+  using UiApp = freeink::ui::FreeInkApp<48, 12>;  // 10 actions below; keep MaxHandlers >= that count
   static constexpr freeink::ui::ActionId ACTION_DISMISS = 1;
   static constexpr freeink::ui::ActionId ACTION_PANEL = 2;  // swallows taps on blank panel space
   static constexpr freeink::ui::ActionId ACTION_TOOL = 3;
@@ -105,6 +106,7 @@ class QuartzReaderMenuActivity final : public Activity {
   static constexpr freeink::ui::ActionId ACTION_SEEK = 7;  // timeline drag; dragPermille = position
   static constexpr freeink::ui::ActionId ACTION_ADV = 8;   // value = row * 4 + part (0 row, 1 minus, 2 plus)
   static constexpr freeink::ui::ActionId ACTION_ADV_BACK = 9;
+  static constexpr freeink::ui::ActionId ACTION_APPLY_ALL = 10;
   static constexpr size_t MAX_FONT_SIZES = 24;
   // Button devices: holding Confirm this long on the bookmark icon opens the list.
   static constexpr unsigned long BOOKMARK_LIST_HOLD_MS = 600;
@@ -112,6 +114,8 @@ class QuartzReaderMenuActivity final : public Activity {
   BookInfo book;
   SaveSettingsCallback saveSettings = nullptr;
   void* saveSettingsContext = nullptr;
+  // Saves the settings as every book's defaults instead of this book's own.
+  SaveSettingsCallback applyToAllBooks = nullptr;
   QuickSettings initial{};
   QuickSettings current{};
   std::array<uint8_t, MAX_FONT_SIZES> fontSizes{};
@@ -147,6 +151,9 @@ class QuartzReaderMenuActivity final : public Activity {
   static void onSeek(const freeink::ui::ActionEvent& event, void* user);
   static void onAdv(const freeink::ui::ActionEvent& event, void* user);
   static void onAdvBack(const freeink::ui::ActionEvent& event, void* user);
+  static void onApplyAll(const freeink::ui::ActionEvent& event, void* user);
+  void drawFooterLink(UiApp::ScreenType& screen, freeink::ui::Rect rect, const char* label, const char* hint,
+                      bool focused, freeink::ui::ActionId action);
 
   // Advanced page (QuartzReaderMenuAdvanced.cpp).
   static AdvKind advKind(Adv row);
@@ -182,5 +189,5 @@ class QuartzReaderMenuActivity final : public Activity {
   static QuickSettings captureSettings();
   void applySettings() const;
   bool settingsChanged() const;
-  void closeMenu(bool cancelled, int action, int16_t value = -1);
+  void closeMenu(bool cancelled, int action, int16_t value = -1, bool forAllBooks = false);
 };

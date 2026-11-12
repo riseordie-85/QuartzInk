@@ -1415,6 +1415,48 @@ bool saveBookReaderSettingsFile(const std::string& cachePath, const BookReaderSe
   return ok;
 }
 
+// Drops the reader-setting overrides saved for every EPUB under /.crosspoint,
+// so each book follows the global reader settings. Safe Mode keeps the few
+// fields it owns. Returns how many books changed.
+int clearReaderSettingOverridesForAllBooks() {
+  constexpr const char* CACHE_ROOT = "/.crosspoint";
+  std::vector<std::string> caches;
+  {
+    auto dir = Storage.open(CACHE_ROOT);
+    if (!dir || !dir.isDirectory()) {
+      if (dir) dir.close();
+      LOG_ERR("ERS", "Cannot open %s to apply settings to all books", CACHE_ROOT);
+      return 0;
+    }
+    // Collect first, then rewrite: keep at most one directory handle open on
+    // the SD card while files inside it are written.
+    caches.reserve(64);
+    char name[64];
+    for (auto entry = dir.openNextFile(); entry; entry = dir.openNextFile()) {
+      if (entry.isDirectory()) {
+        entry.getName(name, sizeof(name));
+        if (std::strncmp(name, "epub_", 5) == 0) caches.emplace_back(name);
+      }
+      entry.close();
+    }
+    dir.close();
+  }
+
+  int changed = 0;
+  for (const auto& name : caches) {
+    const std::string cachePath = std::string(CACHE_ROOT) + "/" + name;
+    if (!Storage.exists((cachePath + READER_SETTINGS_FILE_NAME).c_str())) continue;
+    BookReaderSettingsData data = loadBookReaderSettingsFile(cachePath);
+    const uint32_t keep =
+        data.hasSafeModeOverride ? (data.readerSettingsOverrideMask & SAFE_MODE_SETTING_OVERRIDES) : 0;
+    if (data.readerSettingsOverrideMask == keep) continue;
+    data.readerSettingsOverrideMask = keep;
+    data.hasCustomReaderSettings = keep != 0;
+    if (saveBookReaderSettingsFile(cachePath, data)) ++changed;
+  }
+  return changed;
+}
+
 bool saveBookRenderModeForCache(const std::string& cachePath, const uint8_t renderMode) {
   BookReaderSettingsData data = loadBookReaderSettingsFile(cachePath);
   data.hasRenderModeOverride = true;
@@ -2280,6 +2322,40 @@ void EpubReaderActivity::endGlobalSettingsEdit() {
   }
 }
 
+void EpubReaderActivity::applyReaderSettingsToAllBooks() {
+  if (!epub) return;
+  if (section && section->isBuilding()) {
+    // The section writer keeps SD handles open; release them before rewriting
+    // reader_settings.bin files. The build reopens them on its next chunk.
+    section->releaseBuildFile();
+  }
+
+  // The settings on screen become everyone's defaults. Safe Mode's temporary
+  // values are this book's alone, so they never leak into the defaults.
+  ReaderSettingsSnapshot onScreen;
+  captureReaderSettings(onScreen);
+  if (initialBookReaderSettings.hasSafeModeOverride) {
+    applyReaderSettingsOverrides(onScreen, globalReaderSettingsBeforeBook, SAFE_MODE_SETTING_OVERRIDES);
+  }
+  globalReaderSettingsBeforeBook = onScreen;
+  if (!saveGlobalSettingsPreservingBookOverrides()) LOG_ERR("ERS", "Failed to save reader settings as defaults");
+
+  const int changed = clearReaderSettingOverridesForAllBooks();
+  LOG_INF("ERS", "Applied reader settings to all books; cleared overrides in %d", changed);
+
+  // Keep this book's in-memory record in step with what is now on disk.
+  const BookReaderSettingsData data = loadBookReaderSettingsFile(epub->getCachePath());
+  bookHasCustomReaderSettings = data.hasCustomReaderSettings;
+  initialBookReaderSettings.hasCustomReaderSettings = data.hasCustomReaderSettings;
+  initialBookReaderSettings.readerSettingsOverrideMask = data.readerSettingsOverrideMask;
+  captureReaderSettings(initialBookReaderSettings.readerSettings);
+}
+
+void EpubReaderActivity::applyReaderSettingsToAllBooksForReader(void* ctx) {
+  if (!ctx) return;
+  static_cast<EpubReaderActivity*>(ctx)->applyReaderSettingsToAllBooks();
+}
+
 void EpubReaderActivity::saveReaderOptionsForBook(void* ctx) {
   if (!ctx) {
     return;
@@ -2737,8 +2813,8 @@ void EpubReaderActivity::openQuartzReaderMenu() {
                                                                          progress, totalPages > 0 ? totalPages : 1);
   }
   pauseReadingPaceTimer("quartz_menu");
-  auto menuActivity = makeUniqueNoThrow<QuartzReaderMenuActivity>(renderer, mappedInput, std::move(info),
-                                                                  saveReaderOptionsForBook, this);
+  auto menuActivity = makeUniqueNoThrow<QuartzReaderMenuActivity>(
+      renderer, mappedInput, std::move(info), saveReaderOptionsForBook, this, applyReaderSettingsToAllBooksForReader);
   if (!menuActivity) {
     // Fall back to CrossInk's drawer rather than leaving the reader without a menu.
     LOG_ERR("ERS", "Could not allocate Quartz reader menu");

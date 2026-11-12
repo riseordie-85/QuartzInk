@@ -76,11 +76,12 @@ fui::Rect insetRect(const fui::Rect rect, const int16_t dx, const int16_t dy) {
 
 QuartzReaderMenuActivity::QuartzReaderMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
                                                    BookInfo book, SaveSettingsCallback saveSettings,
-                                                   void* saveSettingsContext)
+                                                   void* saveSettingsContext, SaveSettingsCallback applyToAllBooks)
     : Activity("QuartzReaderMenu", renderer, mappedInput),
       book(std::move(book)),
       saveSettings(saveSettings),
       saveSettingsContext(saveSettingsContext),
+      applyToAllBooks(applyToAllBooks),
       initial(captureSettings()),
       current(initial),
       uiTarget(makeUiTarget(renderer)),
@@ -105,6 +106,7 @@ void QuartzReaderMenuActivity::onEnter() {
   app.on(ACTION_SEEK, &QuartzReaderMenuActivity::onSeek, this);
   app.on(ACTION_ADV, &QuartzReaderMenuActivity::onAdv, this);
   app.on(ACTION_ADV_BACK, &QuartzReaderMenuActivity::onAdvBack, this);
+  app.on(ACTION_APPLY_ALL, &QuartzReaderMenuActivity::onApplyAll, this);
   if (app.handlerOverflowed()) LOG_ERR("QZM", "Quartz menu handler table overflowed");
   app.setScreen(&QuartzReaderMenuActivity::menuScreen, this);
   requestUpdate();
@@ -341,9 +343,15 @@ void QuartzReaderMenuActivity::activateTool(const Tool tool) {
 // ---------------------------------------------------------------------------
 // Closing
 
-void QuartzReaderMenuActivity::closeMenu(const bool cancelled, const int action, const int16_t value) {
+void QuartzReaderMenuActivity::closeMenu(const bool cancelled, const int action, const int16_t value,
+                                         const bool forAllBooks) {
   const bool changed = settingsChanged();
-  if (changed) {
+  if (forAllBooks && applyToAllBooks) {
+    // Even unchanged settings are pushed out: the point is to make every book
+    // look like this one.
+    applySettings();
+    applyToAllBooks(saveSettingsContext);
+  } else if (changed) {
     applySettings();
     if (saveSettings) {
       saveSettings(saveSettingsContext);
@@ -390,12 +398,16 @@ void QuartzReaderMenuActivity::onOption(const fui::ActionEvent& event, void* use
   auto* self = static_cast<QuartzReaderMenuActivity*>(user);
   const auto row = static_cast<Row>(event.value / 8);
   const auto option = static_cast<uint8_t>(event.value % 8);
-  if (row <= Row::Toolbar || row >= Row::Advanced || option >= self->optionCount(row)) return;
+  if (row <= Row::Toolbar || row >= Row::ApplyAll || option >= self->optionCount(row)) return;
   self->chooseOption(row, option);
 }
 
 void QuartzReaderMenuActivity::onAdvanced(const fui::ActionEvent&, void* user) {
   static_cast<QuartzReaderMenuActivity*>(user)->openAdvanced();
+}
+
+void QuartzReaderMenuActivity::onApplyAll(const fui::ActionEvent&, void* user) {
+  static_cast<QuartzReaderMenuActivity*>(user)->closeMenu(true, -1, -1, true);
 }
 
 void QuartzReaderMenuActivity::onDone(const fui::ActionEvent&, void* user) {
@@ -479,6 +491,9 @@ void QuartzReaderMenuActivity::loop() {
   if (up || down) {
     const uint8_t index = static_cast<uint8_t>(focusRow);
     focusRow = static_cast<Row>((index + (down ? 1 : rowCount - 1)) % rowCount);
+    if (focusRow == Row::ApplyAll && !applyToAllBooks) {
+      focusRow = static_cast<Row>((static_cast<uint8_t>(focusRow) + (down ? 1 : rowCount - 1)) % rowCount);
+    }
     requestUpdate();
     return;
   }
@@ -490,7 +505,7 @@ void QuartzReaderMenuActivity::loop() {
       const uint8_t count = toolCount();
       focusTool = static_cast<uint8_t>((focusTool + (right ? 1 : count - 1)) % count);
       requestUpdate();
-    } else if (focusRow != Row::Advanced) {
+    } else if (focusRow < Row::ApplyAll) {
       stepOption(focusRow, right);
     }
     return;
@@ -504,6 +519,9 @@ void QuartzReaderMenuActivity::loop() {
           return;
         }
         activateTool(toolAt(focusTool));
+        return;
+      case Row::ApplyAll:
+        closeMenu(true, -1, -1, true);
         return;
       case Row::Advanced:
         openAdvanced();
@@ -695,12 +713,12 @@ void QuartzReaderMenuActivity::drawSheet(UiApp::ScreenType& screen, const fui::R
   target.text(done, tr(STR_DONE), textStyle(fui::GfxRendererTarget::FONT_BODY, fui::TextAlign::Center, false, true));
   screen.frame().hit(done, ACTION_DONE, 0);
 
-  // Five option rows share the space above the Advanced link.
+  // Five option rows share the space above the two footer links.
   const int16_t smallH = target.lineHeight(fui::GfxRendererTarget::FONT_SMALL);
-  const int16_t advancedH =
-      static_cast<int16_t>(14 + target.lineHeight(fui::GfxRendererTarget::FONT_BODY) + smallH + 4);
+  const int16_t linkH = static_cast<int16_t>(14 + target.lineHeight(fui::GfxRendererTarget::FONT_BODY) + smallH + 4);
+  const int footerLinks = applyToAllBooks ? 2 : 1;
   const int16_t rowsTop = static_cast<int16_t>(inner.y + headerH + 14);
-  const int16_t rowsBottom = static_cast<int16_t>(inner.bottom() - advancedH - 8);
+  const int16_t rowsBottom = static_cast<int16_t>(inner.bottom() - footerLinks * linkH - 8);
   constexpr int ROWS = 5;
   const int16_t rowH =
       static_cast<int16_t>(std::clamp<int>((rowsBottom - rowsTop - (ROWS - 1) * ROW_GAP) / ROWS, 40, 60));
@@ -710,35 +728,46 @@ void QuartzReaderMenuActivity::drawSheet(UiApp::ScreenType& screen, const fui::R
     y = static_cast<int16_t>(y + rowH + ROW_GAP);
   }
 
-  // Advanced: a full-width link under a rule.
-  const fui::Rect advanced{inner.x, static_cast<int16_t>(inner.bottom() - advancedH), inner.width, advancedH};
-  target.fill(fui::Rect{advanced.x, advanced.y, advanced.width, 2}, BLACK);
-  const bool advancedFocused = buttonDevice && focusRow == Row::Advanced;
-  if (advancedFocused) target.stroke(insetRect(advanced, -6, 0), BLACK, FOCUS_BORDER, 12);
-  const int16_t bodyH = target.lineHeight(fui::GfxRendererTarget::FONT_BODY);
-  target.text(fui::Rect{static_cast<int16_t>(advanced.x + 4), static_cast<int16_t>(advanced.y + 12),
-                        static_cast<int16_t>(advanced.width - 40), bodyH},
-              tr(STR_QZ_ADVANCED), textStyle(fui::GfxRendererTarget::FONT_BODY, fui::TextAlign::Left, false, true));
-  target.text(fui::Rect{static_cast<int16_t>(advanced.x + 4), static_cast<int16_t>(advanced.y + 12 + bodyH),
-                        static_cast<int16_t>(advanced.width - 40), smallH},
-              tr(STR_QZ_ADVANCED_HINT), textStyle(fui::GfxRendererTarget::FONT_SMALL, fui::TextAlign::Left));
-  const int16_t chevronX = static_cast<int16_t>(advanced.right() - 18);
-  const int16_t chevronY = static_cast<int16_t>(advanced.y + advanced.height / 2 + 1);
-  target.line(fui::Point{static_cast<int16_t>(chevronX - 6), static_cast<int16_t>(chevronY - 8)},
-              fui::Point{chevronX, chevronY}, 3, BLACK);
-  target.line(fui::Point{chevronX, chevronY},
-              fui::Point{static_cast<int16_t>(chevronX - 6), static_cast<int16_t>(chevronY + 8)}, 3, BLACK);
-  screen.frame().hit(advanced, ACTION_ADVANCED, 0);
+  // Footer: Apply to all books, then Advanced, each a full-width link under a rule.
+  int16_t linkY = static_cast<int16_t>(inner.bottom() - footerLinks * linkH);
+  if (applyToAllBooks) {
+    drawFooterLink(screen, fui::Rect{inner.x, linkY, inner.width, linkH}, tr(STR_QZ_APPLY_ALL),
+                   tr(STR_QZ_APPLY_ALL_HINT), buttonDevice && focusRow == Row::ApplyAll, ACTION_APPLY_ALL);
+    linkY = static_cast<int16_t>(linkY + linkH);
+  }
+  drawFooterLink(screen, fui::Rect{inner.x, linkY, inner.width, linkH}, tr(STR_QZ_ADVANCED), tr(STR_QZ_ADVANCED_HINT),
+                 buttonDevice && focusRow == Row::Advanced, ACTION_ADVANCED);
 
   if (buttonDevice) {
     const char* backLabel = tr(STR_DONE);
     const char* confirmLabel =
-        focusRow == Row::Toolbar || focusRow == Row::Advanced ? tr(STR_SELECT) : tr(STR_NEXT_FIELD);
+        focusRow == Row::Toolbar || focusRow >= Row::ApplyAll ? tr(STR_SELECT) : tr(STR_NEXT_FIELD);
     const char* prevLabel = focusRow == Row::Size ? tr(STR_QZ_SMALLER) : "<";
     const char* nextLabel = focusRow == Row::Size ? tr(STR_QZ_BIGGER) : ">";
     const auto labels = mappedInput.mapLabels(backLabel, confirmLabel, prevLabel, nextLabel);
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4, true);
   }
+}
+
+void QuartzReaderMenuActivity::drawFooterLink(UiApp::ScreenType& screen, const fui::Rect rect, const char* label,
+                                              const char* hint, const bool focused, const fui::ActionId action) {
+  auto& target = screen.target();
+  target.fill(fui::Rect{rect.x, rect.y, rect.width, 2}, BLACK);
+  if (focused) target.stroke(insetRect(rect, -6, 0), BLACK, FOCUS_BORDER, 12);
+  const int16_t bodyH = target.lineHeight(fui::GfxRendererTarget::FONT_BODY);
+  const int16_t smallH = target.lineHeight(fui::GfxRendererTarget::FONT_SMALL);
+  const int16_t textW = static_cast<int16_t>(rect.width - 40);
+  target.text(fui::Rect{static_cast<int16_t>(rect.x + 4), static_cast<int16_t>(rect.y + 12), textW, bodyH}, label,
+              textStyle(fui::GfxRendererTarget::FONT_BODY, fui::TextAlign::Left, false, true));
+  target.text(fui::Rect{static_cast<int16_t>(rect.x + 4), static_cast<int16_t>(rect.y + 12 + bodyH), textW, smallH},
+              hint, textStyle(fui::GfxRendererTarget::FONT_SMALL, fui::TextAlign::Left));
+  const int16_t chevronX = static_cast<int16_t>(rect.right() - 18);
+  const int16_t chevronY = static_cast<int16_t>(rect.y + rect.height / 2 + 1);
+  target.line(fui::Point{static_cast<int16_t>(chevronX - 6), static_cast<int16_t>(chevronY - 8)},
+              fui::Point{chevronX, chevronY}, 3, BLACK);
+  target.line(fui::Point{chevronX, chevronY},
+              fui::Point{static_cast<int16_t>(chevronX - 6), static_cast<int16_t>(chevronY + 8)}, 3, BLACK);
+  screen.frame().hit(rect, action, 0);
 }
 
 void QuartzReaderMenuActivity::drawOptionRow(UiApp::ScreenType& screen, const fui::Rect rowRect, const Row row) {
