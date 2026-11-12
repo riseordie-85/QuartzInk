@@ -387,7 +387,7 @@ void QuartzHomeUi::drawCurrent(UiScreen& screen, const fui::Rect rect) {
   const int16_t textW = static_cast<int16_t>(inner.right() - textX);
   const int16_t bodyH = target.lineHeight(fui::FONT_SLOT_BODY);
   const int16_t smallH = target.lineHeight(fui::FONT_SLOT_SMALL);
-  constexpr int16_t LINE_GAP = 4;
+  constexpr int16_t LINE_GAP = 2;
   constexpr int16_t BAR_H = 14;
 
   // Progress and time sit at the bottom of the card; measure them first so the
@@ -407,7 +407,7 @@ void QuartzHomeUi::drawCurrent(UiScreen& screen, const fui::Rect rect) {
   const bool hasShelf = !current.shelf.empty();
   const auto titleStyle = textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left, false, true, 2);
   const bool longTitle = target.measureText(fui::FONT_SLOT_BODY, book.title.c_str(), titleStyle).width > textW;
-  const int16_t room = static_cast<int16_t>(stackTop - inner.y - LINE_GAP);
+  const int16_t room = static_cast<int16_t>(stackTop - inner.y);
   const int metaLines = (hasAuthor ? 1 : 0) + (hasShelf ? 1 : 0);
   int titleLines = longTitle ? 2 : 1;
   if (titleLines == 2 && (2 + metaLines) * bodyH > room) titleLines = 1;
