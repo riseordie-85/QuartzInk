@@ -6,6 +6,7 @@
 - On touch devices, tapping the middle of the page opens the reader menu; taps on the left and right thirds still turn pages.
 - Page settings' Tight, Normal and Loose spacing set word spacing along with line spacing, so a leftover Word Spacing value no longer leaves wide gaps in left-aligned text.
 - Drag or tap the reader menu's progress timeline to jump to that point in the book.
+- Hold the bookmark icon in the reader menu (or hold Confirm on it with buttons) to open the bookmark list; a short tap still adds or removes a bookmark.
 
 ## [v1.6.1] - 2026-10-03
 

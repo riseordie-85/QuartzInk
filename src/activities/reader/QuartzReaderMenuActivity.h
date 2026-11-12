@@ -66,6 +66,8 @@ class QuartzReaderMenuActivity final : public Activity {
   static constexpr freeink::ui::ActionId ACTION_DONE = 6;
   static constexpr freeink::ui::ActionId ACTION_SEEK = 7;  // timeline drag; dragPermille = position
   static constexpr size_t MAX_FONT_SIZES = 24;
+  // Button devices: holding Confirm this long on the bookmark icon opens the list.
+  static constexpr unsigned long BOOKMARK_LIST_HOLD_MS = 600;
 
   BookInfo book;
   SaveSettingsCallback saveSettings = nullptr;

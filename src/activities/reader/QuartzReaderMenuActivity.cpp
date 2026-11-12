@@ -345,7 +345,13 @@ void QuartzReaderMenuActivity::onPanel(const fui::ActionEvent&, void*) {}
 void QuartzReaderMenuActivity::onTool(const fui::ActionEvent& event, void* user) {
   auto* self = static_cast<QuartzReaderMenuActivity*>(user);
   if (event.value < 0 || event.value >= self->toolCount()) return;
-  self->activateTool(self->toolAt(static_cast<uint8_t>(event.value)));
+  const Tool tool = self->toolAt(static_cast<uint8_t>(event.value));
+  if (tool == Tool::Bookmark && event.longPress) {
+    // Hold the bookmark icon for the bookmark list (Quartz Reader's gesture).
+    self->closeMenu(false, static_cast<int>(EpubReaderMenuAction::VIEW_BOOKMARKS));
+    return;
+  }
+  self->activateTool(tool);
 }
 
 void QuartzReaderMenuActivity::onOption(const fui::ActionEvent& event, void* user) {
@@ -457,6 +463,10 @@ void QuartzReaderMenuActivity::loop() {
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm)) {
     switch (focusRow) {
       case Row::Toolbar:
+        if (toolAt(focusTool) == Tool::Bookmark && mappedInput.getHeldTime() >= BOOKMARK_LIST_HOLD_MS) {
+          closeMenu(false, static_cast<int>(EpubReaderMenuAction::VIEW_BOOKMARKS));
+          return;
+        }
         activateTool(toolAt(focusTool));
         return;
       case Row::Advanced:
@@ -539,7 +549,9 @@ int16_t QuartzReaderMenuActivity::drawTopBar(UiApp::ScreenType& screen, const fu
     const bool filled = active || focused;
     if (filled) target.fill(toolRect, BLACK, 12);
     if (focused && !active) target.stroke(insetRect(toolRect, -4, -4), BLACK, FOCUS_BORDER, 15);
-    screen.frame().hit(toolRect, ACTION_TOOL, i);
+    screen.frame().hit(toolRect, ACTION_TOOL, i,
+                       tool == Tool::Bookmark ? static_cast<uint16_t>(fui::InputDefault | fui::InputLongPress)
+                                              : static_cast<uint16_t>(fui::InputDefault));
 
     const fui::Paint ink = filled ? WHITE : BLACK;
     fui::BitmapRef icon;
