@@ -2766,6 +2766,11 @@ void EpubReaderActivity::openQuartzReaderMenu() {
       return;
     }
     const auto action = static_cast<EpubReaderMenuAction>(menu->action);
+    if (action == EpubReaderMenuAction::GO_TO_PERCENT && menu->drawerValue >= 0) {
+      // Timeline scrub: drawerValue is centipercent.
+      jumpToPercent(static_cast<float>(menu->drawerValue) / 100.0f);
+      return;
+    }
     if (action == EpubReaderMenuAction::READER_OPTIONS) {
       // Advanced (and SD-card fonts): CrossInk's full drawer.
       openReaderMenu();

@@ -101,6 +101,7 @@ void QuartzReaderMenuActivity::onEnter() {
   app.on(ACTION_OPTION, &QuartzReaderMenuActivity::onOption, this);
   app.on(ACTION_ADVANCED, &QuartzReaderMenuActivity::onAdvanced, this);
   app.on(ACTION_DONE, &QuartzReaderMenuActivity::onDone, this);
+  app.on(ACTION_SEEK, &QuartzReaderMenuActivity::onSeek, this);
   if (app.handlerOverflowed()) LOG_ERR("QZM", "Quartz menu handler table overflowed");
   app.setScreen(&QuartzReaderMenuActivity::menuScreen, this);
   requestUpdate();
@@ -307,7 +308,7 @@ void QuartzReaderMenuActivity::activateTool(const Tool tool) {
 // ---------------------------------------------------------------------------
 // Closing
 
-void QuartzReaderMenuActivity::closeMenu(const bool cancelled, const int action) {
+void QuartzReaderMenuActivity::closeMenu(const bool cancelled, const int action, const int16_t value) {
   const bool changed = settingsChanged();
   if (changed) {
     applySettings();
@@ -319,6 +320,7 @@ void QuartzReaderMenuActivity::closeMenu(const bool cancelled, const int action)
   }
   MenuResult menu;
   menu.action = cancelled ? -1 : action;
+  menu.drawerValue = value;
   menu.orientation = SETTINGS.orientation;
   menu.settingsChanged = changed;
   menu.changeMask = changed ? (ReaderSettingsChangeMask::Relayout | ReaderSettingsChangeMask::Preview)
@@ -362,13 +364,41 @@ void QuartzReaderMenuActivity::onDone(const fui::ActionEvent&, void* user) {
   static_cast<QuartzReaderMenuActivity*>(user)->closeMenu(true, -1);
 }
 
+void QuartzReaderMenuActivity::onSeek(const fui::ActionEvent& event, void* user) {
+  auto* self = static_cast<QuartzReaderMenuActivity*>(user);
+  if (event.dragPermille < 0) return;
+  if (self->touchReleasing) {
+    // Centipercent, as the reader's percent jump expects (10000 = end of book).
+    self->closeMenu(false, static_cast<int>(EpubReaderMenuAction::GO_TO_PERCENT),
+                    static_cast<int16_t>(std::clamp<int>(event.dragPermille, 0, 1000) * 10));
+    return;
+  }
+  if (event.dragPermille != self->seekPermille) {
+    self->seekPermille = event.dragPermille;
+    self->requestUpdate();
+  }
+}
+
 void QuartzReaderMenuActivity::loop() {
   if (uiReady) {
-    const fui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
-    if (snap.touchReleased) {
+    fui::InputSnapshot snap = touchSnapshotFrom(mappedInput);
+    // Everything here acts on release. Holding only matters for the timeline
+    // scrubber, which binds on the first held frame; the press edge is dropped
+    // so a touch does not trigger an extra e-ink refresh for a pressed state.
+    snap.touchPressed = false;
+    const bool scrubbing = !sheetOpen && snap.touchHeld;
+    if (snap.touchReleased || scrubbing) {
+      touchReleasing = snap.touchReleased;
       const auto event = app.route(snap);
+      touchReleasing = false;
       if (app.invalidated()) requestUpdate();
       if (event) return;
+      if (snap.touchReleased && seekPermille >= 0) {
+        // Finger lifted just off the track: still jump to where the thumb is.
+        closeMenu(false, static_cast<int>(EpubReaderMenuAction::GO_TO_PERCENT),
+                  static_cast<int16_t>(seekPermille * 10));
+        return;
+      }
     }
   }
 
@@ -554,7 +584,8 @@ void QuartzReaderMenuActivity::drawTimeline(UiApp::ScreenType& screen, const fui
   const int16_t trackX = static_cast<int16_t>(innerX + labelW);
   const int16_t trackW = static_cast<int16_t>(std::max<int>(40, innerW - labelW));
   const int16_t mid = static_cast<int16_t>(y + lineH / 2);
-  const float progress = std::clamp(book.bookProgressPercent, 0.0f, 100.0f) / 100.0f;
+  const float progress = seekPermille >= 0 ? static_cast<float>(seekPermille) / 1000.0f
+                                           : std::clamp(book.bookProgressPercent, 0.0f, 100.0f) / 100.0f;
   const int16_t filled = static_cast<int16_t>(std::lround(progress * trackW));
   target.fill(fui::Rect{trackX, static_cast<int16_t>(mid - 1), trackW, 2}, BLACK);
   if (filled > 0) target.fill(fui::Rect{trackX, static_cast<int16_t>(mid - 3), filled, 6}, BLACK, 3);
@@ -563,6 +594,10 @@ void QuartzReaderMenuActivity::drawTimeline(UiApp::ScreenType& screen, const fui
                             thumb, thumb};
   target.fill(thumbRect, WHITE, thumb / 2);
   target.stroke(thumbRect, BLACK, 3, thumb / 2);
+  // Drag anywhere along the track; the hit band is taller than the line so it
+  // is easy to grab.
+  screen.frame().hit(fui::Rect{trackX, static_cast<int16_t>(mid - 22), trackW, 44}, ACTION_SEEK, 0,
+                     fui::InputTouch | fui::InputDrag);
   y = static_cast<int16_t>(y + lineH + 8);
 
   char percentLabel[24];

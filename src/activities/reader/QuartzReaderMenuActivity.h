@@ -64,6 +64,7 @@ class QuartzReaderMenuActivity final : public Activity {
   static constexpr freeink::ui::ActionId ACTION_OPTION = 4;  // value = row * 8 + option
   static constexpr freeink::ui::ActionId ACTION_ADVANCED = 5;
   static constexpr freeink::ui::ActionId ACTION_DONE = 6;
+  static constexpr freeink::ui::ActionId ACTION_SEEK = 7;  // timeline drag; dragPermille = position
   static constexpr size_t MAX_FONT_SIZES = 24;
 
   BookInfo book;
@@ -75,6 +76,10 @@ class QuartzReaderMenuActivity final : public Activity {
   uint8_t fontSizeCount = 0;
 
   bool sheetOpen = false;
+  // Timeline scrubbing: the thumb follows the finger (0-1000) and the book jumps
+  // there on release. -1 when not scrubbing.
+  int16_t seekPermille = -1;
+  bool touchReleasing = false;
   bool buttonDevice = false;
   Row focusRow = Row::Size;
   uint8_t focusTool = static_cast<uint8_t>(Tool::PageSettings);
@@ -90,6 +95,7 @@ class QuartzReaderMenuActivity final : public Activity {
   static void onOption(const freeink::ui::ActionEvent& event, void* user);
   static void onAdvanced(const freeink::ui::ActionEvent& event, void* user);
   static void onDone(const freeink::ui::ActionEvent& event, void* user);
+  static void onSeek(const freeink::ui::ActionEvent& event, void* user);
 
   void buildScreen(UiApp::ScreenType& screen);
   int16_t drawTopBar(UiApp::ScreenType& screen, freeink::ui::Rect area);
@@ -112,5 +118,5 @@ class QuartzReaderMenuActivity final : public Activity {
   static QuickSettings captureSettings();
   void applySettings() const;
   bool settingsChanged() const;
-  void closeMenu(bool cancelled, int action);
+  void closeMenu(bool cancelled, int action, int16_t value = -1);
 };
