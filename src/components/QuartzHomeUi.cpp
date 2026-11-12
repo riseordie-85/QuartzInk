@@ -315,8 +315,8 @@ void QuartzHomeUi::draw(UiScreen& screen) {
 
   const fui::Rect body = screen.body();
   const bool hasCovers = books && books->size() > 1;
-  const int16_t currentH = hasCovers ? static_cast<int16_t>(std::clamp<int>(body.height * 52 / 100, 150, 240))
-                                     : static_cast<int16_t>(std::min<int>(body.height, 240));
+  const int16_t currentH = hasCovers ? static_cast<int16_t>(std::clamp<int>(body.height * 56 / 100, 150, 260))
+                                     : static_cast<int16_t>(std::min<int>(body.height, 260));
   const fui::Rect currentRect{body.x, body.y, body.width, currentH};
   const fui::Rect coversRect{body.x, static_cast<int16_t>(body.y + currentH + GAP), body.width,
                              static_cast<int16_t>(std::max<int>(0, body.height - currentH - GAP))};
@@ -387,52 +387,77 @@ void QuartzHomeUi::drawCurrent(UiScreen& screen, const fui::Rect rect) {
   const int16_t textW = static_cast<int16_t>(inner.right() - textX);
   const int16_t bodyH = target.lineHeight(fui::FONT_SLOT_BODY);
   const int16_t smallH = target.lineHeight(fui::FONT_SLOT_SMALL);
-  int16_t y = inner.y;
-  // Up to two lines of title; a short title takes one, so the author moves up.
-  const auto titleStyle = textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left, false, true, 2);
-  const bool twoLineTitle = target.measureText(fui::FONT_SLOT_BODY, book.title.c_str(), titleStyle).width > textW;
-  const int16_t titleH = static_cast<int16_t>(bodyH * (twoLineTitle ? 2 : 1));
-  target.text(fui::Rect{textX, y, textW, titleH}, book.title.c_str(), titleStyle);
-  y = static_cast<int16_t>(y + titleH);
-  if (!book.author.empty()) {
-    target.text(fui::Rect{textX, y, textW, bodyH}, book.author.c_str(),
-                textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left));
-    y = static_cast<int16_t>(y + bodyH);
-  }
+  constexpr int16_t LINE_GAP = 4;
+  constexpr int16_t BAR_H = 14;
+
+  // Progress and time sit at the bottom of the card; measure them first so the
+  // title block above can never run into them.
   char line[96];
-  if (!current.shelf.empty()) {
+  char duration[32];
+  const bool hasProgress = current.progressPercent >= 0.0f;
+  const bool hasTaken = current.readingSeconds > 0;
+  const bool hasLeft = current.timeLeftSeconds > 0;
+  const int smallLines = (hasProgress ? 1 : 0) + (hasTaken ? 1 : 0) + (hasLeft ? 1 : 0);
+  const int16_t stackH = static_cast<int16_t>(smallLines * (smallH + LINE_GAP) + (hasProgress ? BAR_H + 6 : 0));
+  const int16_t stackTop = static_cast<int16_t>(inner.bottom() - stackH);
+
+  // Title, author and shelf, shrinking until they fit above the stack: a
+  // two-line title, then one line, then author and shelf in the small font.
+  const bool hasAuthor = !book.author.empty();
+  const bool hasShelf = !current.shelf.empty();
+  const auto titleStyle = textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left, false, true, 2);
+  const bool longTitle = target.measureText(fui::FONT_SLOT_BODY, book.title.c_str(), titleStyle).width > textW;
+  const int16_t room = static_cast<int16_t>(stackTop - inner.y - LINE_GAP);
+  const int metaLines = (hasAuthor ? 1 : 0) + (hasShelf ? 1 : 0);
+  int titleLines = longTitle ? 2 : 1;
+  if (titleLines == 2 && (2 + metaLines) * bodyH > room) titleLines = 1;
+  const bool smallMeta = (titleLines + metaLines) * bodyH > room;
+  const fui::FontId metaFont = smallMeta ? fui::FONT_SLOT_SMALL : fui::FONT_SLOT_BODY;
+  const int16_t metaH = smallMeta ? smallH : bodyH;
+
+  int16_t y = inner.y;
+  const int16_t titleH = static_cast<int16_t>(bodyH * titleLines);
+  target.text(fui::Rect{textX, y, textW, titleH}, book.title.c_str(),
+              textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left, false, true, static_cast<uint8_t>(titleLines)));
+  y = static_cast<int16_t>(y + titleH);
+  if (hasAuthor && y + metaH <= stackTop) {
+    target.text(fui::Rect{textX, y, textW, metaH}, book.author.c_str(), textStyle(metaFont, fui::TextAlign::Left));
+    y = static_cast<int16_t>(y + metaH);
+  }
+  if (hasShelf && y + metaH <= stackTop) {
     std::snprintf(line, sizeof(line), "%s: %s", tr(STR_QZ_SHELF), current.shelf.c_str());
-    target.text(fui::Rect{textX, y, textW, bodyH}, line, textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left));
+    target.text(fui::Rect{textX, y, textW, metaH}, line, textStyle(metaFont, fui::TextAlign::Left));
   }
 
-  // Progress and time, anchored to the bottom of the card.
-  char duration[32];
-  int16_t by = inner.bottom();
-  const auto bottomLine = [&](const char* text) {
-    by = static_cast<int16_t>(by - smallH);
+  // Top to bottom: Completion, its bar, Time Taken, Time Left.
+  int16_t by = stackTop;
+  const auto stackLine = [&](const char* text) {
     target.text(fui::Rect{textX, by, textW, smallH}, text, textStyle(fui::FONT_SLOT_SMALL, fui::TextAlign::Left));
-    by = static_cast<int16_t>(by - 4);
+    by = static_cast<int16_t>(by + smallH + LINE_GAP);
   };
-  if (current.timeLeftSeconds > 0) {
-    BookReadingStats::formatDuration(current.timeLeftSeconds, duration, sizeof(duration));
-    std::snprintf(line, sizeof(line), "%s: %s", tr(STR_QZ_TIME_LEFT), duration);
-    bottomLine(line);
-  }
-  if (current.readingSeconds > 0) {
-    BookReadingStats::formatDuration(current.readingSeconds, duration, sizeof(duration));
-    std::snprintf(line, sizeof(line), "%s: %s", tr(STR_QZ_TIME_TAKEN), duration);
-    bottomLine(line);
-  }
-  if (current.progressPercent >= 0.0f) {
+  if (hasProgress) {
     const float percent = std::clamp(current.progressPercent, 0.0f, 100.0f);
-    const fui::Rect bar{textX, static_cast<int16_t>(by - 14), textW, 14};
+    std::snprintf(line, sizeof(line), "%s: %d%%", tr(STR_QZ_COMPLETION), static_cast<int>(std::lround(percent)));
+    stackLine(line);
+    const fui::Rect bar{textX, by, textW, BAR_H};
     target.stroke(bar, BLACK, 2, 0);
     const int16_t filled = static_cast<int16_t>(std::lround((bar.width - 4) * percent / 100.0f));
-    if (filled > 0)
-      target.fill(fui::Rect{static_cast<int16_t>(bar.x + 2), static_cast<int16_t>(bar.y + 2), filled, 10}, BLACK);
-    by = static_cast<int16_t>(bar.y - 6);
-    std::snprintf(line, sizeof(line), "%s: %d%%", tr(STR_QZ_COMPLETION), static_cast<int>(std::lround(percent)));
-    bottomLine(line);
+    if (filled > 0) {
+      target.fill(fui::Rect{static_cast<int16_t>(bar.x + 2), static_cast<int16_t>(bar.y + 2), filled,
+                            static_cast<int16_t>(BAR_H - 4)},
+                  BLACK);
+    }
+    by = static_cast<int16_t>(by + BAR_H + 6);
+  }
+  if (hasTaken) {
+    BookReadingStats::formatDuration(current.readingSeconds, duration, sizeof(duration));
+    std::snprintf(line, sizeof(line), "%s: %s", tr(STR_QZ_TIME_TAKEN), duration);
+    stackLine(line);
+  }
+  if (hasLeft) {
+    BookReadingStats::formatDuration(current.timeLeftSeconds, duration, sizeof(duration));
+    std::snprintf(line, sizeof(line), "%s: %s", tr(STR_QZ_TIME_LEFT), duration);
+    stackLine(line);
   }
 }
 
