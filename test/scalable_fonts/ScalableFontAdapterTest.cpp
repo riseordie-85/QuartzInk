@@ -14,8 +14,8 @@ using FileMode = HalScalableFont::FileMode;
 int main(int argc, char** argv) {
   assert(argc >= 2);
   // Match the reader's eight built-in faces, which stay alive beside SD fonts.
-  const char* names[] = {"bitter_regular",     "bitter_bold",     "bitter_italic",     "bitter_bolditalic",
-                         "lexenddeca_regular", "lexenddeca_bold", "lexenddeca_italic", "lexenddeca_bolditalic"};
+  const char* names[] = {"libron_regular",     "libron_bold",     "libron_italic",     "libron_bolditalic",
+                         "nvjost_regular", "nvjost_bold", "nvjost_italic", "nvjost_bolditalic"};
   std::array<std::vector<uint8_t>, 8> bytes;
   std::array<HalScalableFont, 8> builtin;
   for (size_t i = 0; i < 8; ++i) {
@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
     assert(reopened.fingerprint() != temporaryIdentity);
     assert(reopened.fingerprint() != residentIdentity);
   }
-  const std::string path = std::string(argv[1]) + "/bitter_regular.ttf";
+  const std::string path = std::string(argv[1]) + "/libron_regular.ttf";
   testHeap = {8 * 1024 * 1024, 1024, 1024};
   assert(!HalScalableFont::prepareFamily(1024, 4));
   testHeap = {8 * 1024 * 1024, 2 * 1024 * 1024, 2 * 1024 * 1024};

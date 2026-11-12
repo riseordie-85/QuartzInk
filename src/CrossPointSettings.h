@@ -190,7 +190,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   };
 
   // Font family options (built-in fonts only; SD card fonts use sdFontFamilyName)
-  enum FONT_FAMILY { LEXENDDECA = 0, BITTER = 1, FONT_FAMILY_COUNT };
+  enum FONT_FAMILY { NVJOST = 0, LIBRON = 1, FONT_FAMILY_COUNT };
   static constexpr uint8_t BUILTIN_FONT_COUNT = FONT_FAMILY_COUNT;
   // Font size options
   enum FONT_SIZE { TINY = 0, SMALL = 1, MEDIUM = 2, LARGE = 3, FONT_SIZE_COUNT };
@@ -562,7 +562,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t readerFrontButtonLeft = FRONT_HW_LEFT;
   uint8_t readerFrontButtonRight = FRONT_HW_RIGHT;
   // Reader font settings
-  uint8_t fontFamily = LEXENDDECA;
+  uint8_t fontFamily = NVJOST;
   // The physical reader size selected by the user. Built-in and SD-card font
   // families resolve this to their closest available file.
   uint8_t readerFontPointSize = 14;

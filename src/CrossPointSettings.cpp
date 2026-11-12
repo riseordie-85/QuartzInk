@@ -126,11 +126,11 @@ CrossPointSettings::FONT_SIZE firstAvailableReaderFontSize() {
 #if !CROSSINK_SCALABLE_FONTS
 int getFallbackReaderFontIdForFamily(const CrossPointSettings::FONT_FAMILY family) {
   switch (family) {
-    case CrossPointSettings::BITTER:
-      return BITTER_10_FONT_ID;
-    case CrossPointSettings::LEXENDDECA:
+    case CrossPointSettings::LIBRON:
+      return LIBRON_10_FONT_ID;
+    case CrossPointSettings::NVJOST:
     default:
-      return LEXENDDECA_10_FONT_ID;
+      return NVJOST_10_FONT_ID;
   }
 }
 
@@ -391,7 +391,7 @@ uint8_t CrossPointSettings::legacyLineSpacingToPercent(const uint8_t legacyValue
   }
 
   switch (fontFamily) {
-    case BITTER:
+    case LIBRON:
       switch (legacyValue) {
         case TIGHT:
           return 95;
@@ -401,7 +401,7 @@ uint8_t CrossPointSettings::legacyLineSpacingToPercent(const uint8_t legacyValue
         default:
           return 110;
       }
-    case LEXENDDECA:
+    case NVJOST:
     default:
       switch (legacyValue) {
         case TIGHT:
@@ -1346,38 +1346,38 @@ int CrossPointSettings::getReaderFontId() const {
 
 int CrossPointSettings::getBuiltInReaderFontId() const {
 #if CROSSINK_SCALABLE_FONTS
-  return scalableBuiltinReaderFontId(fontFamily == BITTER ? 1 : 0, closestBuiltinReaderPointSize(readerFontPointSize));
+  return scalableBuiltinReaderFontId(fontFamily == LIBRON ? 1 : 0, closestBuiltinReaderPointSize(readerFontPointSize));
 #else
   const FONT_SIZE effectiveSize = getEffectiveReaderFontSize();
 
   switch (fontFamily) {
-    case LEXENDDECA:
+    case NVJOST:
     default:
       switch (effectiveSize) {
         case TINY:
-          return LEXENDDECA_10_FONT_ID;
+          return NVJOST_10_FONT_ID;
         case SMALL:
-          return LEXENDDECA_12_FONT_ID;
+          return NVJOST_12_FONT_ID;
         case MEDIUM:
         default:
-          return LEXENDDECA_14_FONT_ID;
+          return NVJOST_14_FONT_ID;
         case LARGE:
-          return LEXENDDECA_16_FONT_ID;
+          return NVJOST_16_FONT_ID;
       }
-      return getFallbackReaderFontIdForFamily(LEXENDDECA);
-    case BITTER:
+      return getFallbackReaderFontIdForFamily(NVJOST);
+    case LIBRON:
       switch (effectiveSize) {
         case TINY:
-          return BITTER_10_FONT_ID;
+          return LIBRON_10_FONT_ID;
         case SMALL:
-          return BITTER_12_FONT_ID;
+          return LIBRON_12_FONT_ID;
         case MEDIUM:
         default:
-          return BITTER_14_FONT_ID;
+          return LIBRON_14_FONT_ID;
         case LARGE:
-          return BITTER_16_FONT_ID;
+          return LIBRON_16_FONT_ID;
       }
-      return getFallbackReaderFontIdForFamily(BITTER);
+      return getFallbackReaderFontIdForFamily(LIBRON);
   }
   return getFallbackReaderFontIdForFamily(static_cast<FONT_FAMILY>(fontFamily));
 #endif

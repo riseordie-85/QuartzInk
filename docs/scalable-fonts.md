@@ -1,6 +1,6 @@
 # Scalable TTF fonts on ESP32-S3 devices
 
-On ESP32-S3 readers, CrossInk includes Bitter and Lexend Deca as scalable
+On ESP32-S3 readers, QuartzInk includes Libron and NV Jost as scalable
 TrueType fonts. You can also add your own static `.ttf` fonts. ESP32-C3 readers
 continue to use the existing bitmap fonts and `.cpfont` font packs.
 

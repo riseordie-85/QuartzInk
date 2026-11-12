@@ -161,8 +161,8 @@ generate_family() {
 
 generate_reading_fonts() {
   echo "Generating built-in reading fonts..."
-  generate_family lexenddeca LexendDeca LexendDeca yes
-  generate_family bitter Bitter Bitter yes
+  generate_family nvjost NVJost NV_Jost yes
+  generate_family libron Libron Libron yes
   echo ""
   echo "Built-in reading fonts complete."
   echo ""

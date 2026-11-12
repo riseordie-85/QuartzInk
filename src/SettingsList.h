@@ -135,7 +135,7 @@ inline uint8_t closestPointSizeIndex(const std::vector<uint8_t>& sizes, const ui
 // are appended after the built-in fonts. Otherwise only built-in fonts are listed.
 inline SettingInfo buildFontFamilySetting(const SdCardFontRegistry* registry) {
   // Built-in font labels (StrId)
-  std::vector<StrId> enumValues = {StrId::STR_LEXEND_DECA, StrId::STR_BITTER};
+  std::vector<StrId> enumValues = {StrId::STR_NV_JOST, StrId::STR_LIBRON};
   // Runtime string labels for SD card fonts
   std::vector<std::string> enumStringValues;
 
@@ -157,8 +157,8 @@ inline SettingInfo buildFontFamilySetting(const SdCardFontRegistry* registry) {
   std::vector<std::string> allStringValues;
   if (sdFontCount > 0) {
     constexpr auto builtinRange = BUILTIN_FONT_POINT_SIZE_RANGE;
-    allStringValues.push_back(fontFamilyLabel(I18N.get(StrId::STR_LEXEND_DECA), builtinRange));
-    allStringValues.push_back(fontFamilyLabel(I18N.get(StrId::STR_BITTER), builtinRange));
+    allStringValues.push_back(fontFamilyLabel(I18N.get(StrId::STR_NV_JOST), builtinRange));
+    allStringValues.push_back(fontFamilyLabel(I18N.get(StrId::STR_LIBRON), builtinRange));
     allStringValues.insert(allStringValues.end(), enumStringValues.begin(), enumStringValues.end());
   }
 

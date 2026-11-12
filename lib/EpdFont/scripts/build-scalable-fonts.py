@@ -19,7 +19,8 @@ args = parser.parse_args()
 args.output.mkdir(parents=True, exist_ok=True)
 headers = Path(__file__).resolve().parents[1] / 'builtinFonts'
 assets = []
-for family, directory in [('bitter', 'Bitter'), ('lexenddeca', 'LexendDeca')]:
+for family, directory, prefix, display in [('libron', 'Libron', 'Libron', 'Libron'),
+                                          ('nvjost', 'NVJost', 'NV_Jost', 'NV Jost')]:
     for style in ['Regular', 'Bold', 'Italic', 'BoldItalic']:
         name = f'{family}_{style.lower()}'
         header = (headers / f'{family}_12_{style.lower()}.h').read_text()
@@ -27,7 +28,7 @@ for family, directory in [('bitter', 'Bitter'), ('lexenddeca', 'LexendDeca')]:
         points = set()
         for a,b in re.findall(r'\{\s*(0x[0-9A-Fa-f]+|\d+),\s*(0x[0-9A-Fa-f]+|\d+),', intervals):
             points.update(range(int(a,0),int(b,0)+1))
-        font = TTFont(args.source/directory/f'{directory}-{style}.ttf', recalcTimestamp=False)
+        font = TTFont(args.source/directory/f'{prefix}-{style}.ttf', recalcTimestamp=False)
         cmap = font.getBestCmap()
         # Preserve the generator's first-covering-face policy. Fallback outlines
         # are decomposed and scaled to the primary em before being appended.
@@ -75,7 +76,7 @@ for family, directory in [('bitter', 'Bitter'), ('lexenddeca', 'LexendDeca')]:
                 if table.isUnicode(): table.cmap[cp]=glyphname
         options=subset.Options()
         # Normalize our derived faces to the family/style shown in CrossInk.
-        for nid,value in [(1,directory),(2,style),(16,directory),(17,style)]:
+        for nid,value in [(1,display),(2,style),(16,display),(17,style)]:
             font['name'].setName(value,nid,3,1,0x409)
         font['head'].macStyle=(1 if 'Bold' in style else 0)|(2 if 'Italic' in style else 0)
         font['OS/2'].fsSelection=(32 if 'Bold' in style else 0)|(1 if 'Italic' in style else 0)

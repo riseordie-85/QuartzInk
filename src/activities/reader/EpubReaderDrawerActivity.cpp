@@ -511,8 +511,8 @@ void EpubReaderDrawerActivity::discoverFonts() {
   fontLabels.reserve(CrossPointSettings::BUILTIN_FONT_COUNT + families.size());
   fontSettingIndexes.reserve(CrossPointSettings::BUILTIN_FONT_COUNT + families.size());
   constexpr auto builtinRange = BUILTIN_FONT_POINT_SIZE_RANGE;
-  fontLabels.push_back(fontFamilyLabel(tr(STR_LEXEND_DECA), builtinRange));
-  fontLabels.push_back(fontFamilyLabel(tr(STR_BITTER), builtinRange));
+  fontLabels.push_back(fontFamilyLabel(tr(STR_NV_JOST), builtinRange));
+  fontLabels.push_back(fontFamilyLabel(tr(STR_LIBRON), builtinRange));
   fontSettingIndexes.push_back(0);
   fontSettingIndexes.push_back(1);
   for (size_t i = 0; i < families.size(); ++i) {
@@ -2446,7 +2446,7 @@ void EpubReaderDrawerActivity::renderPreviewContents(const ReaderSettingsDraft& 
     const int noteHeight = previewSettings.textAntiAliasing ? labelTextHeight + 2 : 0;
     const char* name = previewSettings.sdFontFamilyName[0]
                            ? previewSettings.sdFontFamilyName.data()
-                           : (previewSettings.fontFamily == 0 ? tr(STR_LEXEND_DECA) : tr(STR_BITTER));
+                           : (previewSettings.fontFamily == 0 ? tr(STR_NV_JOST) : tr(STR_LIBRON));
     char label[128];
     std::snprintf(label, sizeof(label), "%s \"%s\", %upt", tr(STR_PREVIEW), name, previewSettings.readerFontPointSize);
     const int labelY = preview.bottom() - metrics.previewPadding - labelTextHeight - noteHeight;
@@ -3085,8 +3085,8 @@ const char* EpubReaderDrawerActivity::rowValue(const RowId row, char* buffer, co
   switch (row) {
     case RowId::FontFamily: {
       if (draft.sdFontFamilyName[0] != '\0') return draft.sdFontFamilyName.data();
-      static constexpr std::array<StrId, CrossPointSettings::BUILTIN_FONT_COUNT> labels = {StrId::STR_LEXEND_DECA,
-                                                                                           StrId::STR_BITTER};
+      static constexpr std::array<StrId, CrossPointSettings::BUILTIN_FONT_COUNT> labels = {StrId::STR_NV_JOST,
+                                                                                           StrId::STR_LIBRON};
       if (draft.fontFamily >= labels.size()) return tr(STR_UNAVAILABLE);
       return I18N.get(labels[draft.fontFamily]);
     }

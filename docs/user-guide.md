@@ -304,8 +304,8 @@ settings. Older saved books may need this reset before they can inherit
 individual global changes. **Delete Book Cache** does not reset these choices.
 
 - **Reader Font Family**: Choose the font used for reading:
-  - "Lexend Deca" (default)
-  - "Bitter"
+  - "NV Jost" (default)
+  - "Libron"
 
 - **Reader Font Size**: Choose from the sizes available for the selected font
   and firmware build. ESP32-S3 readers use scalable TTF fonts with every whole
@@ -736,7 +736,7 @@ power-button wake is also splashless.
 
 ### 3.9 Custom Fonts (SD Card)
 
-CrossInk supports loading additional fonts from the SD card, extending beyond the built-in Lexend Deca and Bitter families. Custom fonts can include extended Unicode coverage, enabling CJK (Chinese, Japanese, Korean) and other scripts.
+CrossInk supports loading additional fonts from the SD card, extending beyond the built-in NV Jost and Libron families. Custom fonts can include extended Unicode coverage, enabling CJK (Chinese, Japanese, Korean) and other scripts.
 
 There are three ways to install fonts:
 

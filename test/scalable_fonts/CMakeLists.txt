@@ -71,10 +71,10 @@ if(SANITIZE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 add_test(NAME scalable_font_adapter COMMAND scalable_font_adapter_test
   ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/EpdFont/scalableFonts
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/EpdFont/scalableFonts/bitter_regular.ttf
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/EpdFont/scalableFonts/bitter_bold.ttf
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/EpdFont/scalableFonts/bitter_italic.ttf
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/EpdFont/scalableFonts/bitter_bolditalic.ttf)
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/EpdFont/scalableFonts/libron_regular.ttf
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/EpdFont/scalableFonts/libron_bold.ttf
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/EpdFont/scalableFonts/libron_italic.ttf
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/EpdFont/scalableFonts/libron_bolditalic.ttf)
 
 # Takes original and subset font directories; kept out of CTest because the
 # original binary assets are extracted from the requested baseline revision.

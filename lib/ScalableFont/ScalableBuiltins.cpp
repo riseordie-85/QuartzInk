@@ -12,15 +12,15 @@
 namespace {
 std::optional<HalScalableFont> faces[8];
 bool ready[2] = {};
-const uint8_t* const assets[] = {lexenddeca_regularOutline,    lexenddeca_boldOutline,  lexenddeca_italicOutline,
-                                 lexenddeca_bolditalicOutline, bitter_regularOutline,   bitter_boldOutline,
-                                 bitter_italicOutline,         bitter_bolditalicOutline};
-constexpr size_t lengths[] = {sizeof(lexenddeca_regularOutline), sizeof(lexenddeca_boldOutline),
-                              sizeof(lexenddeca_italicOutline),  sizeof(lexenddeca_bolditalicOutline),
-                              sizeof(bitter_regularOutline),     sizeof(bitter_boldOutline),
-                              sizeof(bitter_italicOutline),      sizeof(bitter_bolditalicOutline)};
-constexpr int ids[2][4] = {{LEXENDDECA_10_FONT_ID, LEXENDDECA_12_FONT_ID, LEXENDDECA_14_FONT_ID, LEXENDDECA_16_FONT_ID},
-                           {BITTER_10_FONT_ID, BITTER_12_FONT_ID, BITTER_14_FONT_ID, BITTER_16_FONT_ID}};
+const uint8_t* const assets[] = {nvjost_regularOutline,    nvjost_boldOutline,      nvjost_italicOutline,
+                                 nvjost_bolditalicOutline, libron_regularOutline,   libron_boldOutline,
+                                 libron_italicOutline,     libron_bolditalicOutline};
+constexpr size_t lengths[] = {sizeof(nvjost_regularOutline), sizeof(nvjost_boldOutline),
+                              sizeof(nvjost_italicOutline),  sizeof(nvjost_bolditalicOutline),
+                              sizeof(libron_regularOutline), sizeof(libron_boldOutline),
+                              sizeof(libron_italicOutline),  sizeof(libron_bolditalicOutline)};
+constexpr int ids[2][4] = {{NVJOST_10_FONT_ID, NVJOST_12_FONT_ID, NVJOST_14_FONT_ID, NVJOST_16_FONT_ID},
+                           {LIBRON_10_FONT_ID, LIBRON_12_FONT_ID, LIBRON_14_FONT_ID, LIBRON_16_FONT_ID}};
 }  // namespace
 int scalableBuiltinFontId(int id) {
   for (unsigned f = 0; f < 2; ++f)

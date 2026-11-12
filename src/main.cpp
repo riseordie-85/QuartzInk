@@ -179,50 +179,46 @@ static void logBootHeap(const char* stage) {
 
 // Fonts
 #if !CROSSINK_SCALABLE_FONTS
-EpdFont lexenddeca10RegularFont(&lexenddeca_10_regular);
-EpdFont lexenddeca10BoldFont(&lexenddeca_10_bold);
-EpdFont lexenddeca10ItalicFont(&lexenddeca_10_italic);
-EpdFont lexenddeca10BoldItalicFont(&lexenddeca_10_bolditalic);
-EpdFontFamily lexenddeca10FontFamily(&lexenddeca10RegularFont, &lexenddeca10BoldFont, &lexenddeca10ItalicFont,
-                                     &lexenddeca10BoldItalicFont);
-EpdFont lexenddeca12RegularFont(&lexenddeca_12_regular);
-EpdFont lexenddeca12BoldFont(&lexenddeca_12_bold);
-EpdFont lexenddeca12ItalicFont(&lexenddeca_12_italic);
-EpdFont lexenddeca12BoldItalicFont(&lexenddeca_12_bolditalic);
-EpdFontFamily lexenddeca12FontFamily(&lexenddeca12RegularFont, &lexenddeca12BoldFont, &lexenddeca12ItalicFont,
-                                     &lexenddeca12BoldItalicFont);
-EpdFont lexenddeca14RegularFont(&lexenddeca_14_regular);
-EpdFont lexenddeca14BoldFont(&lexenddeca_14_bold);
-EpdFont lexenddeca14ItalicFont(&lexenddeca_14_italic);
-EpdFont lexenddeca14BoldItalicFont(&lexenddeca_14_bolditalic);
-EpdFontFamily lexenddeca14FontFamily(&lexenddeca14RegularFont, &lexenddeca14BoldFont, &lexenddeca14ItalicFont,
-                                     &lexenddeca14BoldItalicFont);
-EpdFont lexenddeca16RegularFont(&lexenddeca_16_regular);
-EpdFont lexenddeca16BoldFont(&lexenddeca_16_bold);
-EpdFont lexenddeca16ItalicFont(&lexenddeca_16_italic);
-EpdFont lexenddeca16BoldItalicFont(&lexenddeca_16_bolditalic);
-EpdFontFamily lexenddeca16FontFamily(&lexenddeca16RegularFont, &lexenddeca16BoldFont, &lexenddeca16ItalicFont,
-                                     &lexenddeca16BoldItalicFont);
-EpdFont bitter10RegularFont(&bitter_10_regular);
-EpdFont bitter10BoldFont(&bitter_10_bold);
-EpdFont bitter10ItalicFont(&bitter_10_italic);
-EpdFont bitter10BoldItalicFont(&bitter_10_bolditalic);
-EpdFontFamily bitter10FontFamily(&bitter10RegularFont, &bitter10BoldFont, &bitter10ItalicFont, &bitter10BoldItalicFont);
-EpdFont bitter12RegularFont(&bitter_12_regular);
-EpdFont bitter12BoldFont(&bitter_12_bold);
-EpdFont bitter12ItalicFont(&bitter_12_italic);
-EpdFont bitter12BoldItalicFont(&bitter_12_bolditalic);
-EpdFontFamily bitter12FontFamily(&bitter12RegularFont, &bitter12BoldFont, &bitter12ItalicFont, &bitter12BoldItalicFont);
-EpdFont bitter14RegularFont(&bitter_14_regular);
-EpdFont bitter14BoldFont(&bitter_14_bold);
-EpdFont bitter14ItalicFont(&bitter_14_italic);
-EpdFont bitter14BoldItalicFont(&bitter_14_bolditalic);
-EpdFontFamily bitter14FontFamily(&bitter14RegularFont, &bitter14BoldFont, &bitter14ItalicFont, &bitter14BoldItalicFont);
-EpdFont bitter16RegularFont(&bitter_16_regular);
-EpdFont bitter16BoldFont(&bitter_16_bold);
-EpdFont bitter16ItalicFont(&bitter_16_italic);
-EpdFont bitter16BoldItalicFont(&bitter_16_bolditalic);
-EpdFontFamily bitter16FontFamily(&bitter16RegularFont, &bitter16BoldFont, &bitter16ItalicFont, &bitter16BoldItalicFont);
+EpdFont nvjost10RegularFont(&nvjost_10_regular);
+EpdFont nvjost10BoldFont(&nvjost_10_bold);
+EpdFont nvjost10ItalicFont(&nvjost_10_italic);
+EpdFont nvjost10BoldItalicFont(&nvjost_10_bolditalic);
+EpdFontFamily nvjost10FontFamily(&nvjost10RegularFont, &nvjost10BoldFont, &nvjost10ItalicFont, &nvjost10BoldItalicFont);
+EpdFont nvjost12RegularFont(&nvjost_12_regular);
+EpdFont nvjost12BoldFont(&nvjost_12_bold);
+EpdFont nvjost12ItalicFont(&nvjost_12_italic);
+EpdFont nvjost12BoldItalicFont(&nvjost_12_bolditalic);
+EpdFontFamily nvjost12FontFamily(&nvjost12RegularFont, &nvjost12BoldFont, &nvjost12ItalicFont, &nvjost12BoldItalicFont);
+EpdFont nvjost14RegularFont(&nvjost_14_regular);
+EpdFont nvjost14BoldFont(&nvjost_14_bold);
+EpdFont nvjost14ItalicFont(&nvjost_14_italic);
+EpdFont nvjost14BoldItalicFont(&nvjost_14_bolditalic);
+EpdFontFamily nvjost14FontFamily(&nvjost14RegularFont, &nvjost14BoldFont, &nvjost14ItalicFont, &nvjost14BoldItalicFont);
+EpdFont nvjost16RegularFont(&nvjost_16_regular);
+EpdFont nvjost16BoldFont(&nvjost_16_bold);
+EpdFont nvjost16ItalicFont(&nvjost_16_italic);
+EpdFont nvjost16BoldItalicFont(&nvjost_16_bolditalic);
+EpdFontFamily nvjost16FontFamily(&nvjost16RegularFont, &nvjost16BoldFont, &nvjost16ItalicFont, &nvjost16BoldItalicFont);
+EpdFont libron10RegularFont(&libron_10_regular);
+EpdFont libron10BoldFont(&libron_10_bold);
+EpdFont libron10ItalicFont(&libron_10_italic);
+EpdFont libron10BoldItalicFont(&libron_10_bolditalic);
+EpdFontFamily libron10FontFamily(&libron10RegularFont, &libron10BoldFont, &libron10ItalicFont, &libron10BoldItalicFont);
+EpdFont libron12RegularFont(&libron_12_regular);
+EpdFont libron12BoldFont(&libron_12_bold);
+EpdFont libron12ItalicFont(&libron_12_italic);
+EpdFont libron12BoldItalicFont(&libron_12_bolditalic);
+EpdFontFamily libron12FontFamily(&libron12RegularFont, &libron12BoldFont, &libron12ItalicFont, &libron12BoldItalicFont);
+EpdFont libron14RegularFont(&libron_14_regular);
+EpdFont libron14BoldFont(&libron_14_bold);
+EpdFont libron14ItalicFont(&libron_14_italic);
+EpdFont libron14BoldItalicFont(&libron_14_bolditalic);
+EpdFontFamily libron14FontFamily(&libron14RegularFont, &libron14BoldFont, &libron14ItalicFont, &libron14BoldItalicFont);
+EpdFont libron16RegularFont(&libron_16_regular);
+EpdFont libron16BoldFont(&libron_16_bold);
+EpdFont libron16ItalicFont(&libron_16_italic);
+EpdFont libron16BoldItalicFont(&libron_16_bolditalic);
+EpdFontFamily libron16FontFamily(&libron16RegularFont, &libron16BoldFont, &libron16ItalicFont, &libron16BoldItalicFont);
 
 #endif
 EpdFont smallFont(&inter_8_regular);
@@ -1175,14 +1171,14 @@ void setupDisplayAndFonts(const bool seamless, const bool loadReaderResources, c
   renderer.setFontCacheManager(&fontCacheManager);
 
 #if !CROSSINK_SCALABLE_FONTS
-  renderer.insertFont(LEXENDDECA_10_FONT_ID, lexenddeca10FontFamily);
-  renderer.insertFont(LEXENDDECA_12_FONT_ID, lexenddeca12FontFamily);
-  renderer.insertFont(LEXENDDECA_14_FONT_ID, lexenddeca14FontFamily);
-  renderer.insertFont(LEXENDDECA_16_FONT_ID, lexenddeca16FontFamily);
-  renderer.insertFont(BITTER_10_FONT_ID, bitter10FontFamily);
-  renderer.insertFont(BITTER_12_FONT_ID, bitter12FontFamily);
-  renderer.insertFont(BITTER_14_FONT_ID, bitter14FontFamily);
-  renderer.insertFont(BITTER_16_FONT_ID, bitter16FontFamily);
+  renderer.insertFont(NVJOST_10_FONT_ID, nvjost10FontFamily);
+  renderer.insertFont(NVJOST_12_FONT_ID, nvjost12FontFamily);
+  renderer.insertFont(NVJOST_14_FONT_ID, nvjost14FontFamily);
+  renderer.insertFont(NVJOST_16_FONT_ID, nvjost16FontFamily);
+  renderer.insertFont(LIBRON_10_FONT_ID, libron10FontFamily);
+  renderer.insertFont(LIBRON_12_FONT_ID, libron12FontFamily);
+  renderer.insertFont(LIBRON_14_FONT_ID, libron14FontFamily);
+  renderer.insertFont(LIBRON_16_FONT_ID, libron16FontFamily);
 #endif
   renderer.insertFont(UI_10_FONT_ID, ui10FontFamily);
   renderer.insertFont(UI_12_FONT_ID, ui12FontFamily);

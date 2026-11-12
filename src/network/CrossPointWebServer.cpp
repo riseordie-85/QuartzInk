@@ -1693,8 +1693,8 @@ void CrossPointWebServer::handleGetSettings() const {
         JsonArray options = doc["options"].to<JsonArray>();
         if (s.nameId == StrId::STR_FONT_FAMILY && !fontFamilies.empty()) {
           constexpr auto builtinRange = BUILTIN_FONT_POINT_SIZE_RANGE;
-          options.add(fontFamilyLabel(I18N.get(StrId::STR_LEXEND_DECA), builtinRange));
-          options.add(fontFamilyLabel(I18N.get(StrId::STR_BITTER), builtinRange));
+          options.add(fontFamilyLabel(I18N.get(StrId::STR_NV_JOST), builtinRange));
+          options.add(fontFamilyLabel(I18N.get(StrId::STR_LIBRON), builtinRange));
           for (const auto& family : fontFamilies) {
             options.add(fontFamilyLabel(family.name, fontFamilyPointSizeRange(family)));
           }

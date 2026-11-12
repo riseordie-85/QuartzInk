@@ -223,7 +223,7 @@ int QuartzReaderMenuActivity::selectedOption(const Row row) const {
   switch (row) {
     case Row::Font:
       if (current.sdFontFamilyName[0] != '\0') return 2;
-      return current.fontFamily == CrossPointSettings::BITTER ? 1 : 0;
+      return current.fontFamily == CrossPointSettings::LIBRON ? 1 : 0;
     case Row::Spacing:
       for (uint8_t i = 0; i < 3; ++i) {
         if (spacingPreset(i) == current.lineHeightPercent && SPACING_WORD[i] == current.wordSpacing) return i;
@@ -257,7 +257,7 @@ void QuartzReaderMenuActivity::chooseOption(const Row row, const uint8_t option)
         closeMenu(false, static_cast<int>(EpubReaderMenuAction::READER_OPTIONS));
         return;
       }
-      current.fontFamily = option == 1 ? CrossPointSettings::BITTER : CrossPointSettings::LEXENDDECA;
+      current.fontFamily = option == 1 ? CrossPointSettings::LIBRON : CrossPointSettings::NVJOST;
       current.sdFontFamilyName[0] = '\0';
       loadFontSizes();
       current.pointSize = closestBuiltinReaderPointSize(current.pointSize);
@@ -832,7 +832,7 @@ void QuartzReaderMenuActivity::drawOptionCell(UiApp::ScreenType& screen, const f
       return;
     }
     case Row::Font: {
-      const char* names[] = {"Lexend", "Bitter", tr(STR_QZ_MORE_FONTS)};
+      const char* names[] = {tr(STR_NV_JOST), tr(STR_LIBRON), tr(STR_QZ_MORE_FONTS)};
       target.text(cell, names[option], textStyle(fui::GfxRendererTarget::FONT_BODY, fui::TextAlign::Center, selected));
       return;
     }

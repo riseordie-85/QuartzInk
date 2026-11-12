@@ -1,6 +1,7 @@
 # QuartzInk's default reading fonts: Readerly and the core set of Nico
 # Verbruggen's e-reader fonts (https://github.com/nicoverbruggen/ebook-fonts),
-# all under free licenses that allow redistribution. Built into .cpfont packs
+# all under free licenses that allow redistribution. Libron and NV Jost are
+# built into the firmware, so they are not in these packs. Built into .cpfont packs
 # for the X3 with build-sd-fonts.py --config quartzink-fonts.yaml; the X4 Pro
 # reads the same .ttf files directly.
 
@@ -15,17 +16,6 @@ families:
       bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/extra/Readerly-Bold.ttf" }
       italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/extra/Readerly-Italic.ttf" }
       bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/extra/Readerly-BoldItalic.ttf" }
-
-  - name: Libron
-    description: "Book serif"
-    languages: "Latin"
-    intervals: latin-ext
-    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
-    styles:
-      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Libron-Regular.ttf" }
-      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Libron-Bold.ttf" }
-      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Libron-Italic.ttf" }
-      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Libron-BoldItalic.ttf" }
 
   - name: Sourcerer
     description: "Serif"
@@ -70,17 +60,6 @@ families:
       bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Garamond-Bold.ttf" }
       italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Garamond-Italic.ttf" }
       bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Garamond-BoldItalic.ttf" }
-
-  - name: NV Jost
-    description: "Geometric sans, tuned for e-readers"
-    languages: "Latin"
-    intervals: latin-ext
-    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
-    styles:
-      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Jost-Regular.ttf" }
-      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Jost-Bold.ttf" }
-      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Jost-Italic.ttf" }
-      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Jost-BoldItalic.ttf" }
 
   - name: NV Bitter
     description: "Slab serif, tuned for e-readers"

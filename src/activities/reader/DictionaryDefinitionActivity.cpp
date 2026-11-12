@@ -141,7 +141,7 @@ static bool shouldSanitizeDefinitionCodepoint(uint32_t cp) {
   }
 }
 
-// Every Lexend Deca/Bitter reader font header (all sizes and styles) has the
+// Every NV Jost/Libron reader font header (all sizes and styles) has the
 // same direct coverage among the codepoints above. Keep that coverage beside
 // the approximation policy instead of probing the font map for every definition.
 // The Greek entries below are the renderer's fixed synthetic fallbacks; U+02BB
@@ -169,10 +169,10 @@ static constexpr bool builtinDefinitionFontSupportsCandidate(const uint32_t cp) 
     case 0x2212:
       return true;
     default:
-      return (cp >= 0x0300 && cp <= 0x0304) || (cp >= 0x0306 && cp <= 0x030C) || cp == 0x030F ||
-             (cp >= 0x0311 && cp <= 0x0312) || cp == 0x031B || (cp >= 0x0323 && cp <= 0x0324) ||
-             (cp >= 0x0326 && cp <= 0x0328) || cp == 0x032E || cp == 0x0331 || cp == 0x0335 || cp == 0x034F ||
-             cp == 0x03BB;
+      // QuartzInk: NV Jost lacks U+0309, U+030F, U+0311, U+031B, U+0323-U+0324,
+      // U+032E, U+0331 and U+0335, so those take the approximation path.
+      return (cp >= 0x0300 && cp <= 0x0304) || (cp >= 0x0306 && cp <= 0x0308) || (cp >= 0x030A && cp <= 0x030C) ||
+             cp == 0x0312 || (cp >= 0x0326 && cp <= 0x0328) || cp == 0x034F || cp == 0x03BB;
   }
 }
 

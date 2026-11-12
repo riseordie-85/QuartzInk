@@ -15,8 +15,8 @@ std::vector<uint8_t> load(const std::string& p) {
 }
 int main(int argc, char** argv) {
   assert(argc == 3);
-  const char* names[] = {"bitter_regular",     "bitter_bold",     "bitter_italic",     "bitter_bolditalic",
-                         "lexenddeca_regular", "lexenddeca_bold", "lexenddeca_italic", "lexenddeca_bolditalic"};
+  const char* names[] = {"libron_regular",     "libron_bold",     "libron_italic",     "libron_bolditalic",
+                         "nvjost_regular", "nvjost_bold", "nvjost_italic", "nvjost_bolditalic"};
   size_t count = 0;
   for (auto name : names) {
     auto a = load(std::string(argv[1]) + "/" + name + ".ttf"), b = load(std::string(argv[2]) + "/" + name + ".ttf");

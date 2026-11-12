@@ -23,22 +23,22 @@ emit_hash_define() {
 }
 
 # Reading fonts
-emit_hash_define LEXENDDECA_10_FONT_ID \
-  ./lexenddeca_10_regular.h ./lexenddeca_10_bold.h ./lexenddeca_10_bolditalic.h ./lexenddeca_10_italic.h
-emit_hash_define LEXENDDECA_12_FONT_ID \
-  ./lexenddeca_12_regular.h ./lexenddeca_12_bold.h ./lexenddeca_12_bolditalic.h ./lexenddeca_12_italic.h
-emit_hash_define LEXENDDECA_14_FONT_ID \
-  ./lexenddeca_14_regular.h ./lexenddeca_14_bold.h ./lexenddeca_14_bolditalic.h ./lexenddeca_14_italic.h
-emit_hash_define LEXENDDECA_16_FONT_ID \
-  ./lexenddeca_16_regular.h ./lexenddeca_16_bold.h ./lexenddeca_16_bolditalic.h ./lexenddeca_16_italic.h
-emit_hash_define BITTER_10_FONT_ID \
-  ./bitter_10_regular.h ./bitter_10_bold.h ./bitter_10_bolditalic.h ./bitter_10_italic.h
-emit_hash_define BITTER_12_FONT_ID \
-  ./bitter_12_regular.h ./bitter_12_bold.h ./bitter_12_bolditalic.h ./bitter_12_italic.h
-emit_hash_define BITTER_14_FONT_ID \
-  ./bitter_14_regular.h ./bitter_14_bold.h ./bitter_14_bolditalic.h ./bitter_14_italic.h
-emit_hash_define BITTER_16_FONT_ID \
-  ./bitter_16_regular.h ./bitter_16_bold.h ./bitter_16_bolditalic.h ./bitter_16_italic.h
+emit_hash_define NVJOST_10_FONT_ID \
+  ./nvjost_10_regular.h ./nvjost_10_bold.h ./nvjost_10_bolditalic.h ./nvjost_10_italic.h
+emit_hash_define NVJOST_12_FONT_ID \
+  ./nvjost_12_regular.h ./nvjost_12_bold.h ./nvjost_12_bolditalic.h ./nvjost_12_italic.h
+emit_hash_define NVJOST_14_FONT_ID \
+  ./nvjost_14_regular.h ./nvjost_14_bold.h ./nvjost_14_bolditalic.h ./nvjost_14_italic.h
+emit_hash_define NVJOST_16_FONT_ID \
+  ./nvjost_16_regular.h ./nvjost_16_bold.h ./nvjost_16_bolditalic.h ./nvjost_16_italic.h
+emit_hash_define LIBRON_10_FONT_ID \
+  ./libron_10_regular.h ./libron_10_bold.h ./libron_10_bolditalic.h ./libron_10_italic.h
+emit_hash_define LIBRON_12_FONT_ID \
+  ./libron_12_regular.h ./libron_12_bold.h ./libron_12_bolditalic.h ./libron_12_italic.h
+emit_hash_define LIBRON_14_FONT_ID \
+  ./libron_14_regular.h ./libron_14_bold.h ./libron_14_bolditalic.h ./libron_14_italic.h
+emit_hash_define LIBRON_16_FONT_ID \
+  ./libron_16_regular.h ./libron_16_bold.h ./libron_16_bolditalic.h ./libron_16_italic.h
 
 # UI fonts
 emit_hash_define UI_10_FONT_ID ./inter_10_regular.h ./inter_10_bold.h ./ui_symbols_10.h
@@ -49,8 +49,8 @@ echo ""
 echo "// Font ID 0 is reserved as the \"not found\" sentinel."
 echo "// Guard against any hash accidentally producing 0."
 for id in \
-  LEXENDDECA_10_FONT_ID LEXENDDECA_12_FONT_ID LEXENDDECA_14_FONT_ID LEXENDDECA_16_FONT_ID \
-  BITTER_10_FONT_ID BITTER_12_FONT_ID BITTER_14_FONT_ID BITTER_16_FONT_ID \
+  NVJOST_10_FONT_ID NVJOST_12_FONT_ID NVJOST_14_FONT_ID NVJOST_16_FONT_ID \
+  LIBRON_10_FONT_ID LIBRON_12_FONT_ID LIBRON_14_FONT_ID LIBRON_16_FONT_ID \
   UI_10_FONT_ID UI_12_FONT_ID SMALL_FONT_ID; do
   echo "static_assert(${id} != 0, \"Font ID collision with sentinel\");"
 done

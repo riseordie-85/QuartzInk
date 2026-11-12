@@ -66,8 +66,8 @@ int main(int argc, char** argv) {
   const FtFont::MemoryCallbacks callbacks{&arena, FixedArenaAllocator::allocate, FixedArenaAllocator::deallocate,
                                           FixedArenaAllocator::reallocate};
   assert(FtFont::configureMemory(&callbacks));
-  const char* names[] = {"bitter_regular",     "bitter_bold",     "bitter_italic",     "bitter_bolditalic",
-                         "lexenddeca_regular", "lexenddeca_bold", "lexenddeca_italic", "lexenddeca_bolditalic"};
+  const char* names[] = {"libron_regular",     "libron_bold",     "libron_italic",     "libron_bolditalic",
+                         "nvjost_regular", "nvjost_bold", "nvjost_italic", "nvjost_bolditalic"};
   constexpr unsigned panelPpis[] = {219, 235, 259};
 
   for (const char* name : names) {

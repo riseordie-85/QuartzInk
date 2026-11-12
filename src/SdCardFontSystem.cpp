@@ -131,7 +131,7 @@ void SdCardFontSystem::begin(GfxRenderer& renderer) {
 
 int SdCardFontSystem::ensureBuiltInReaderFont(GfxRenderer& renderer) {
 #if CROSSINK_SCALABLE_FONTS
-  ensureScalableBuiltinFamily(renderer, SETTINGS.fontFamily == CrossPointSettings::BITTER ? 1 : 0);
+  ensureScalableBuiltinFamily(renderer, SETTINGS.fontFamily == CrossPointSettings::LIBRON ? 1 : 0);
 #else
   (void)renderer;
 #endif
