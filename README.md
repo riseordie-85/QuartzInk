@@ -5,6 +5,25 @@
 underneath and gives it the look and habits of the Quartz apps (Quartz Reader, Quartz Notes and friends):
 a Quartz Home screen with shelves, Quartz-style page settings, and reading stats that can leave the device.
 
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./docs/images/quartzink/home-shelves.jpg" alt="Quartz Home with the current book, recent covers and shelf buttons" />
+    </td>
+    <td align="center" width="50%">
+      <img src="./docs/images/quartzink/page-settings.jpg" alt="Quartz page settings: size, font, spacing, margins and alignment" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./docs/images/quartzink/book-bar.jpg" alt="The book bar with Home, Look up, Contents, Bookmark and Page settings, and the timeline" />
+    </td>
+    <td align="center" width="50%">
+      <img src="./docs/images/quartzink/sleep-settings.jpg" alt="Sleep screen choices including Cover + Overlay" />
+    </td>
+  </tr>
+</table>
+
 ### Supported devices
 
 QuartzInk is built and tested on:
