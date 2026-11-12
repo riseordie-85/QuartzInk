@@ -2,6 +2,7 @@
 
 ### Added
 
+- `lib/EpdFont/scripts/quartzink-fonts.yaml` builds QuartzInk's reading fonts (Readerly and Nico Verbruggen's core e-reader fonts) into `.cpfont` packs for the X3; the X4 Pro uses the same `.ttf` files directly from `/fonts`.
 - Page settings' **Apply to all books** makes the current font, size, spacing, margins, alignment and Advanced choices the settings for every book, clearing the separate settings older books kept for themselves.
 - Shelves: every folder inside `/Books` on the SD card becomes a shelf button on Home that opens that folder. More than six shelves page in sixes (swipe sideways, or move past the last row with buttons).
 - Export reading stats from File Transfer: the web page's **Download reading stats** button (or `/api/stats`) gives this reader's totals, reading days and per-book stats as JSON. See `docs/stats-export.md`.

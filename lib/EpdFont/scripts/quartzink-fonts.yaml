@@ -1,0 +1,116 @@
+# QuartzInk's default reading fonts: Readerly and the core set of Nico
+# Verbruggen's e-reader fonts (https://github.com/nicoverbruggen/ebook-fonts),
+# all under free licenses that allow redistribution. Built into .cpfont packs
+# for the X3 with build-sd-fonts.py --config quartzink-fonts.yaml; the X4 Pro
+# reads the same .ttf files directly.
+
+families:
+  - name: Readerly
+    description: "Bookerly-style serif tuned for e-ink"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/extra/Readerly-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/extra/Readerly-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/extra/Readerly-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/extra/Readerly-BoldItalic.ttf" }
+
+  - name: Libron
+    description: "Book serif"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Libron-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Libron-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Libron-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Libron-BoldItalic.ttf" }
+
+  - name: Sourcerer
+    description: "Serif"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Sourcerer-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Sourcerer-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Sourcerer-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Sourcerer-BoldItalic.ttf" }
+
+  - name: Cartisse
+    description: "Serif"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Cartisse-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Cartisse-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Cartisse-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/Cartisse-BoldItalic.ttf" }
+
+  - name: NV Charis
+    description: "Charis SIL, tuned for e-readers"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Charis-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Charis-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Charis-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Charis-BoldItalic.ttf" }
+
+  - name: NV Garamond
+    description: "Garamond, tuned for e-readers"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Garamond-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Garamond-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Garamond-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Garamond-BoldItalic.ttf" }
+
+  - name: NV Jost
+    description: "Geometric sans, tuned for e-readers"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Jost-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Jost-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Jost-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Jost-BoldItalic.ttf" }
+
+  - name: NV Bitter
+    description: "Slab serif, tuned for e-readers"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Bitter-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Bitter-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Bitter-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Bitter-BoldItalic.ttf" }
+
+  - name: NV Legible Next
+    description: "Highly legible sans, tuned for e-readers"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Legible_Next-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Legible_Next-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Legible_Next-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Legible_Next-BoldItalic.ttf" }
+
+  - name: NV Palatium
+    description: "Palatino-style serif, tuned for e-readers"
+    languages: "Latin"
+    intervals: latin-ext
+    sizes: [8, 9, 10, 12, 14, 16, 18, 20]
+    styles:
+      regular: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Palatium-Regular.ttf" }
+      bold: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Palatium-Bold.ttf" }
+      italic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Palatium-Italic.ttf" }
+      bolditalic: { url: "https://raw.githubusercontent.com/nicoverbruggen/ebook-fonts/main/fonts/core/NV_Palatium-BoldItalic.ttf" }
