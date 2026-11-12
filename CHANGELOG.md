@@ -9,7 +9,7 @@
 
 ### Changed
 
-- Home is the Quartz layout: a clock bar with Reading Stats and Settings, the current book with its shelf, completion, time taken and time left, the next three recent books, the shelf buttons, and Browse Files, Library and File Transfer along the bottom. On button devices the selected item turns black with white text.
+- **Quartz** is a new UI Theme, and the default. It gives the Quartz Home layout below; picking another theme brings back that theme's Home. Quartz Home: a clock bar with Reading Stats and Settings, the current book with its shelf, completion, time taken and time left, the next three recent books, the shelf buttons, and Browse Files, Library and File Transfer along the bottom. On button devices the selected item turns black with white text.
 - The boot screen and the Dark/Light sleep screens show the QuartzInk gem logo and wordmark; the boot screen credits CrossPoint/CrossInk along the bottom. Regenerate the logo with `scripts/generate_quartz_logo.py` from `assets/quartzink/boot.jpg`.
 - Cover + Custom draws your PNG overlay (a pinned PNG, or one from the sleep folder) over the book's cover while reading; with no PNG it shows the plain cover. Custom draws a pinned PNG on white, and pinning a PNG no longer switches Custom or Cover + Custom to Page Overlay.
 - PNG overlays sized for a full screen (within 20%) stretch to fill the panel, so a 480×800 frame covers the X3's 528×792 screen edge to edge.

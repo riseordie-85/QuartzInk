@@ -814,8 +814,10 @@ void HomeActivity::onEnter() {
   Activity::onEnter();
 
   hasOpdsServers = OPDS_STORE.hasServers();
-  quartzUi = makeUniqueNoThrow<QuartzHomeUi>(renderer);
-  if (!quartzUi) LOG_ERR("HOME", "Cannot allocate Quartz Home UI; using the theme's Home");
+  if (SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTZ) {
+    quartzUi = makeUniqueNoThrow<QuartzHomeUi>(renderer);
+    if (!quartzUi) LOG_ERR("HOME", "Cannot allocate Quartz Home UI; using Lyra Home");
+  }
   if (!quartzUi && UITheme::hasCoverGridHome()) {
     coverGridUi = makeUniqueNoThrow<CoverGridHomeUi>(renderer);
     if (!coverGridUi) LOG_ERR("HOME", "Cannot allocate cover grid UI; using standard Home");
