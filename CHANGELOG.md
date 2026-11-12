@@ -16,7 +16,7 @@
 - Page settings' Tight, Normal and Loose spacing set word spacing along with line spacing, so a leftover Word Spacing value no longer leaves wide gaps in left-aligned text.
 - Drag or tap the reader menu's progress timeline to jump to that point in the book.
 - Hold the bookmark icon in the reader menu (or hold Confirm on it with buttons) to open the bookmark list; a short tap still adds or removes a bookmark.
-- Look up is always in the reader menu's title bar; without a dictionary for the book it opens the dictionary picker.
+- The reader menu's title bar has Home, Look up, Contents, Bookmark and Page settings. Without a dictionary for the book, Look up opens the dictionary picker.
 - Page settings' Advanced page lists line and word spacing, hyphenation, anti-aliasing, focus reading, guide dots, top/bottom and side margins, paragraph spacing and indents, orientation, images, publisher page numbers and the book's own styles in one scrolling list, with All reader options opening the full CrossInk menu.
 
 ### Fixed

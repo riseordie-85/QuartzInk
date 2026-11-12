@@ -302,13 +302,12 @@ void QuartzReaderMenuActivity::stepOption(const Row row, const bool forward) {
 // ---------------------------------------------------------------------------
 // Toolbar
 
-uint8_t QuartzReaderMenuActivity::toolCount() const { return 4; }
+uint8_t QuartzReaderMenuActivity::toolCount() const { return 5; }
 
 QuartzReaderMenuActivity::Tool QuartzReaderMenuActivity::toolAt(const uint8_t index) const {
-  // Look up sits where Home was: Home stays on the X4 Pro's Home key and swipe,
-  // and on Back from the reader.
-  static constexpr Tool TOOLS[] = {Tool::Lookup, Tool::Contents, Tool::Bookmark, Tool::PageSettings};
-  return TOOLS[std::min<uint8_t>(index, 3)];
+  static constexpr Tool TOOLS[] = {Tool::Home, Tool::Lookup, Tool::Contents, Tool::Bookmark, Tool::PageSettings};
+  static_assert(sizeof(TOOLS) / sizeof(TOOLS[0]) == 5, "toolCount() must match the toolbar");
+  return TOOLS[std::min<uint8_t>(index, 4)];
 }
 
 void QuartzReaderMenuActivity::activateTool(const Tool tool) {
