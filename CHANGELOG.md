@@ -9,6 +9,7 @@
 ### Changed
 
 - Home is the Quartz layout: a clock bar with Reading Stats and Settings, the current book with its shelf, completion, time taken and time left, the next three recent books, the shelf buttons, and Browse Files, Library and File Transfer along the bottom. On button devices the selected item turns black with white text.
+- The boot screen and the Dark/Light sleep screens show the QuartzInk gem logo and wordmark; the boot screen credits CrossPoint/CrossInk along the bottom. Regenerate the logo with `scripts/generate_quartz_logo.py` from `assets/quartzink/boot.jpg`.
 - Settings uses the Quartz look: a black title bar, one outlined segment control for the categories, and outlined rounded rows that fill black when selected.
 - Opening the menu while reading now shows the Quartz reader chrome: a title bar with Look up, Contents, Bookmark and Page settings, plus a book progress timeline. Page settings holds text size, font, line spacing, margins and alignment in one sheet; Advanced opens the full CrossInk reader menu. Button devices open straight into the sheet and move through it with the page buttons, Left/Right and Confirm.
 - On touch devices, tapping the middle of the page opens the reader menu; taps on the left and right thirds still turn pages.

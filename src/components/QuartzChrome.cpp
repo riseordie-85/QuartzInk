@@ -8,6 +8,7 @@
 #include "components/TouchHeaderBackButton.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/touchHeaderIcons.h"
+#include "images/QuartzLogo.h"
 
 namespace fui = freeink::ui;
 
@@ -42,6 +43,21 @@ void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* t
   style.maxLines = 1;
   target.text(fui::Rect{titleX, bar.y, static_cast<int16_t>(std::max(0, bar.right() - 18 - titleX)), bar.height}, title,
               style);
+}
+
+int drawLogo(const GfxRenderer& renderer, const int y) {
+  auto target = makeUiTarget(renderer);
+  fui::BitmapRef logo;
+  logo.data = QuartzLogo;
+  logo.width = QUARTZ_LOGO_WIDTH;
+  logo.height = QUARTZ_LOGO_HEIGHT;
+  logo.format = fui::BitmapFormat::BW1;
+  // Drawn per pixel through the renderer, so it follows the screen orientation.
+  const int x = (renderer.getScreenWidth() - QUARTZ_LOGO_WIDTH) / 2;
+  target.bitmap(fui::Rect{static_cast<int16_t>(x), static_cast<int16_t>(y), static_cast<int16_t>(QUARTZ_LOGO_WIDTH),
+                          static_cast<int16_t>(QUARTZ_LOGO_HEIGHT)},
+                logo, fui::BitmapMode::Center);
+  return QUARTZ_LOGO_HEIGHT;
 }
 
 fui::StyleSet rowStyles() {

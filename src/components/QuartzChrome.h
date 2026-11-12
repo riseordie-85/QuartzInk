@@ -18,6 +18,10 @@ constexpr int16_t ROW_GAP = 8;
 // white back chevron where TouchHeaderBackButton's tap target already sits.
 void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* title, bool backArrow);
 
+// The QuartzInk gem logo and wordmark, centered horizontally with its top at `y`.
+// Returns the logo's height.
+int drawLogo(const GfxRenderer& renderer, int y);
+
 // Outlined, rounded list rows; the selected row fills black with white text.
 freeink::ui::StyleSet rowStyles();
 

@@ -15,8 +15,9 @@
 #include "CrossPointSettings.h"
 #include "CrossPointState.h"
 #include "ImageFolderIndex.h"
+#include "components/QuartzChrome.h"
 #include "fontIds.h"
-#include "images/Logo120.h"
+#include "images/QuartzLogo.h"
 
 namespace {
 
@@ -117,11 +118,13 @@ bool tryDrawRotatingBootImage(const GfxRenderer& renderer) {
 void drawDefaultBootLogo(const GfxRenderer& renderer) {
   const auto pageWidth = renderer.getScreenWidth();
   const auto pageHeight = renderer.getScreenHeight();
+  (void)pageWidth;
 
   renderer.clearScreen();
-  renderer.drawImage(Logo120, (pageWidth - 120) / 2, (pageHeight - 120) / 2, 120, 120);
-  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 70, tr(STR_CROSSINK), true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 95, tr(STR_BOOTING));
+  // QuartzInk boot art: the gem logo and wordmark a little above center, the
+  // fork credit and version along the bottom.
+  QuartzChrome::drawLogo(renderer, (pageHeight - QUARTZ_LOGO_HEIGHT) / 2 - 50);
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 56, tr(STR_QZ_FORK_LINE));
   renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 30, AppVersion::version());
 }
 

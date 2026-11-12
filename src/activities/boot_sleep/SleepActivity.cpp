@@ -38,12 +38,13 @@
 #include "RecentBooksStore.h"
 #include "SleepCoverAssets.h"
 #include "activities/reader/ReaderUtils.h"
+#include "components/QuartzChrome.h"
 #include "components/UITheme.h"
 #include "components/themes/dashboard/DashboardTheme.h"
 #include "components/themes/minimal/MinimalTheme.h"
 #include "fontIds.h"
-#include "images/Logo120.h"
 #include "images/MoonIcon.h"
+#include "images/QuartzLogo.h"
 
 namespace {
 
@@ -692,9 +693,10 @@ void SleepActivity::renderDefaultSleepScreen() const {
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
-  renderer.drawImage(Logo120, (pageWidth - 120) / 2, (pageHeight - 120) / 2, 120, 120);
-  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 70, tr(STR_CROSSINK), true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 95, tr(STR_SLEEPING));
+  (void)pageWidth;  // used only by the optional build-info line
+  const int logoTop = (pageHeight - QUARTZ_LOGO_HEIGHT) / 2 - 30;
+  QuartzChrome::drawLogo(renderer, logoTop);
+  renderer.drawCenteredText(SMALL_FONT_ID, logoTop + QUARTZ_LOGO_HEIGHT + 24, tr(STR_SLEEPING));
 
   // Make sleep screen dark unless light is selected in settings
   const bool lightSleepScreen = SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::LIGHT;
@@ -706,7 +708,8 @@ void SleepActivity::renderDefaultSleepScreen() const {
   const std::string buildInfo = std::string(CROSSINK_BUILD_ENV) + " " + AppVersion::version();
   const std::string visibleBuildInfo =
       renderer.truncatedText(SMALL_FONT_ID, buildInfo.c_str(), pageWidth - sleepBuildInfoSideMargin * 2);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 118, visibleBuildInfo.c_str(), lightSleepScreen);
+  renderer.drawCenteredText(SMALL_FONT_ID, logoTop + QUARTZ_LOGO_HEIGHT + 48, visibleBuildInfo.c_str(),
+                            lightSleepScreen);
 #endif
 
   renderer.displayBuffer(HalDisplay::HALF_REFRESH, TURN_OFF_SCREEN_AFTER_SLEEP_REFRESH);
