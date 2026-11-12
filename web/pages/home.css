@@ -1,42 +1,84 @@
-h2 {
-        color: var(--title-color);
-        margin-top: 0;
-        font-size: 1.15em;
-        font-weight: 600;
-        letter-spacing: -0.01em;
-      }
-.info-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid var(--border-color);
-      }
-.info-row:last-child {
-        border-bottom: none;
-      }
-.label {
-        font-weight: 500;
-        color: var(--label-color);
-      }
-.value {
-        color: var(--title-color);
-        font-weight: 500;
-      }
-.status {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 999px;
-        background-color: rgba(22, 163, 74, 0.12);
-        color: var(--success-color);
-        font-size: 0.85em;
-        font-weight: 600;
-      }
-.stats-download-btn {
-        padding: 9px 16px;
-        border-radius: var(--radius-sm);
-        font-weight: 600;
-        background-color: var(--accent-color);
-        color: white;
-        text-decoration: none;
-      }
+.qz-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.qz-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  aspect-ratio: 1 / 1;
+  padding: 18px 12px;
+  border: var(--qz-border) solid #000;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: #000;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.25em;
+  text-align: center;
+  transition: background-color 0.12s, color 0.12s;
+}
+.qz-tile svg {
+  /* A fixed icon box keeps the labels on one line across a row. */
+  width: 44%;
+  max-width: 120px;
+  height: 40%;
+}
+a.qz-tile:hover,
+a.qz-tile:focus-visible {
+  background: #000;
+  color: #fff;
+  outline: none;
+}
+.qz-tile.wide {
+  grid-column: 1 / -1;
+  aspect-ratio: auto;
+  min-height: 200px;
+}
+.qz-tile.wide svg {
+  width: auto;
+  height: 96px;
+}
+.qz-tile.wide.slim {
+  min-height: 0;
+  padding: 22px 12px;
+}
+.qz-tile[aria-disabled="true"] {
+  color: #000;
+  cursor: default;
+}
+.qz-device {
+  margin: 20px 0 0;
+  text-align: center;
+  color: var(--label-color);
+  font-size: 0.9em;
+}
+.qz-settings-link {
+  margin: 4px 0 0;
+  text-align: center;
+}
+.qz-settings-link a {
+  color: #000;
+  font-weight: 700;
+}
+@media (max-width: 600px) {
+  .qz-tiles {
+    gap: 12px;
+  }
+  .qz-tile {
+    font-size: 1.05em;
+    gap: 12px;
+  }
+  .qz-tile.wide {
+    min-height: 150px;
+  }
+  .qz-tile.wide.slim {
+    min-height: 0;
+  }
+  .qz-tile.wide svg {
+    height: 72px;
+  }
+}

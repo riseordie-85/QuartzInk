@@ -1,0 +1,23 @@
+<section class="card">
+  <div class="qz-row">
+    <h2>Reading Stats</h2>
+    <a class="qz-btn primary" href="/api/stats?download=1" download="quartzink-stats.json">Export JSON</a>
+  </div>
+  <p class="qz-hint" id="statsSource">Loading…</p>
+  <div class="qz-stat-grid" id="totals"></div>
+</section>
+
+<section class="card" id="whenCard" hidden>
+  <h2>When you read</h2>
+  <h3>Time of day</h3>
+  <div class="qz-bars" id="timeOfDay"></div>
+  <h3>Day of week</h3>
+  <div class="qz-bars" id="dayOfWeek"></div>
+</section>
+
+<section class="card" id="booksCard" hidden>
+  <h2>Books</h2>
+  <div id="books"></div>
+</section>
+
+<p class="qz-hint qz-center">Quartz Reader can import these from <b>Settings → Import from e-reader</b>.</p>

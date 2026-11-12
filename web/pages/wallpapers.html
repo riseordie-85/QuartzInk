@@ -1,0 +1,38 @@
+<section class="card">
+  <h2>Sleep screen</h2>
+  <div class="qz-seg" id="modeSeg" role="radiogroup" aria-label="Sleep screen mode">
+    <button type="button" data-mode="2">Custom</button>
+    <button type="button" data-mode="5">Cover + Custom</button>
+    <button type="button" data-mode="12">Cover + Overlay</button>
+    <button type="button" data-mode="6">Page Overlay</button>
+  </div>
+  <p class="qz-hint" id="modeHint"></p>
+  <p class="qz-hint" id="pinLine"></p>
+</section>
+
+<section class="card">
+  <h2>Upload wallpapers</h2>
+  <label class="qz-drop" id="dropZone">
+    <input type="file" id="fileInput" accept="image/*,.bmp,.png" multiple hidden />
+    <span class="qz-drop-title">Choose images</span>
+    <span class="qz-hint">or drop them here · JPG, PNG, BMP, HEIC (Safari)</span>
+  </label>
+  <div class="qz-options">
+    <span>Photos:</span>
+    <div class="qz-seg qz-seg-small" id="fitSeg">
+      <button type="button" data-fit="fill" class="active">Fill screen</button>
+      <button type="button" data-fit="fit">Fit whole image</button>
+    </div>
+  </div>
+  <p class="qz-hint" id="sizeHint">Photos are resized for the screen and saved as grayscale BMPs. PNGs keep their transparency, for overlays.</p>
+  <div id="uploadList"></div>
+</section>
+
+<section class="card">
+  <div class="qz-row">
+    <h2>Your wallpapers</h2>
+    <button type="button" class="qz-btn" id="randomBtn">Shuffle all</button>
+  </div>
+  <p class="qz-hint" id="folderLine">Loading…</p>
+  <div class="qz-wall-grid" id="grid"></div>
+</section>

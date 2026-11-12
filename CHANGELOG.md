@@ -6,10 +6,13 @@
 - Page settings' **Apply to all books** makes the current font, size, spacing, margins, alignment and Advanced choices the settings for every book, clearing the separate settings older books kept for themselves.
 - Shelves: every folder inside `/Books` on the SD card becomes a shelf button on Home that opens that folder. More than six shelves page in sixes (swipe sideways, or move past the last row with buttons).
 - Export reading stats from File Transfer: the web page's **Download reading stats** button (or `/api/stats`) gives this reader's totals, reading days and per-book stats as JSON. See `docs/stats-export.md`.
+- **Wallpapers** page in File Transfer: upload sleep images from a phone or computer, pick the sleep screen (Custom, Cover + Custom, Cover + Overlay, Page Overlay), pin a wallpaper or shuffle them all, and delete ones you no longer want. Photos (JPG, HEIC on Safari, and others) are resized to the reader's screen in the browser and saved as grayscale BMPs, with Fill or Fit; PNGs keep their transparency for overlays. Uploads go to your sleep folder, creating `/.sleep` if there isn't one.
+- **Reading Stats** page in File Transfer: totals, streaks, when you read, and time per book, with **Export JSON**.
 
 ### Changed
 
 - The built-in reading fonts are **NV Jost** (sans, the default) and **Libron** (serif), replacing Lexend Deca and Bitter on both devices. Books re-lay out once the first time they open in the new font.
+- The File Transfer dashboard is redesigned in the Quartz look and set in NV Jost: a tile home page (File Browser, Books, Wallpapers, Fonts, View Stats & Export), black-and-white outlined cards, and layouts that fit phones.
 - The File Transfer web pages say QuartzInk, with the gem logo. **Files** can upload a whole folder with its subfolders (button or drag and drop), recreating them under the current folder. **Fonts** accepts a folder of family folders and installs each family at once.
 - **Quartz** is a new UI Theme, and the default. It gives the Quartz Home layout below; picking another theme brings back that theme's Home. Quartz Home: a clock bar with Reading Stats and Settings, the current book with its shelf, completion, time taken and time left, the next three recent books, the shelf buttons, and Browse Files, Library and File Transfer along the bottom. On button devices the selected item turns black with white text.
 - The boot screen and the Dark/Light sleep screens show the QuartzInk gem logo and wordmark; the boot screen credits CrossPoint/CrossInk along the bottom. Regenerate the logo with `scripts/generate_quartz_logo.py` from `assets/quartzink/boot.jpg`.

@@ -7,7 +7,7 @@ device (for Quartz Reader, a spreadsheet, or a backup).
 
 1. On the reader, open **File Transfer** and connect to Wi-Fi.
 2. Open the address it shows in a browser.
-3. On the home page, click **Download reading stats**.
+3. On the home page, open **View Stats & Export** and click **Export JSON**.
 
 Apps can fetch the same document directly from `http://<reader-ip>/api/stats`.
 Add `?download=1` to have browsers save it as `quartzink-stats.json`.

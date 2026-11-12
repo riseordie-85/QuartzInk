@@ -22,6 +22,7 @@
 
 #include "AppVersion.h"
 #include "CrossPointSettings.h"
+#include "CrossPointState.h"
 #include "FontInstaller.h"
 #include "OpdsServerStore.h"
 #include "QuickActions.h"
@@ -35,9 +36,13 @@
 #include "html/FilesPageHtml.generated.h"
 #include "html/FontsPageHtml.generated.h"
 #include "html/HomePageHtml.generated.h"
+#include "html/JostBoldWoff2.generated.h"
+#include "html/JostRegularWoff2.generated.h"
 #include "html/LogoPng.generated.h"
 #include "html/SettingsPageHtml.generated.h"
+#include "html/StatsPageHtml.generated.h"
 #include "html/StyleCss.generated.h"
+#include "html/WallpapersPageHtml.generated.h"
 #include "html/js/jszip_minJs.generated.h"
 #include "util/BookCacheUtils.h"
 #include "util/BookMoveUtils.h"
@@ -304,7 +309,11 @@ bool isProtectedPath(const String& path) {
 
     String segment = path.substring(start, end);
 
-    if (segment.startsWith(".")) return true;
+    // QuartzInk: the root /.sleep folder (sleep wallpapers) stays reachable so
+    // the Wallpapers page can list, upload and delete images in it. Hidden
+    // items inside it are still protected.
+    const bool sleepFolder = start == 1 && segment.equalsIgnoreCase(".sleep");
+    if (segment.startsWith(".") && !sleepFolder) return true;
 
     for (const auto* item : HIDDEN_ITEMS) {
       if (segment.equals(item)) return true;
@@ -376,6 +385,13 @@ void CrossPointWebServer::begin() {
   server->on("/js/jszip.min.js", HTTP_GET, [this] { handleJszip(); });
   server->on("/style.css", HTTP_GET, [this] { handleStyleCss(); });
   server->on("/logo.png", HTTP_GET, [this] { handleLogo(); });
+  server->on("/jost.woff2", HTTP_GET, [this] { handleJostFont(false); });
+  server->on("/jost-bold.woff2", HTTP_GET, [this] { handleJostFont(true); });
+  server->on("/wallpapers", HTTP_GET, [this] { handleWallpapersPage(); });
+  server->on("/stats", HTTP_GET, [this] { handleStatsPage(); });
+  server->on("/api/wallpapers", HTTP_GET, [this] { handleWallpaperInfo(); });
+  server->on("/api/wallpapers/pin", HTTP_POST, [this] { handleWallpaperPin(); });
+  server->on("/api/wallpapers/mode", HTTP_POST, [this] { handleWallpaperMode(); });
 
   server->on("/api/status", HTTP_GET, [this] { handleStatus(); });
   server->on("/api/stats", HTTP_GET, [this] { handleStatsExport(); });
@@ -631,6 +647,104 @@ void CrossPointWebServer::handleLogo() const {
   // Raw PNG (already compressed); no Content-Encoding.
   server->sendHeader("Cache-Control", "public, max-age=31536000, immutable");
   server->send_P(200, "image/png", LogoPng, LogoPngSize);
+}
+
+void CrossPointWebServer::handleJostFont(const bool bold) const {
+  // Pre-compressed WOFF2 served raw; the ?v= hash on the URL makes it immutable.
+  server->sendHeader("Cache-Control", "public, max-age=31536000, immutable");
+  if (bold) {
+    server->send_P(200, "font/woff2", JostBoldWoff2, JostBoldWoff2Size);
+  } else {
+    server->send_P(200, "font/woff2", JostRegularWoff2, JostRegularWoff2Size);
+  }
+}
+
+void CrossPointWebServer::handleWallpapersPage() const {
+  sendStaticContent(server.get(), WallpapersPageHtml, sizeof(WallpapersPageHtml), WallpapersPageHtmlETag);
+}
+
+void CrossPointWebServer::handleStatsPage() const {
+  sendStaticContent(server.get(), StatsPageHtml, sizeof(StatsPageHtml), StatsPageHtmlETag);
+}
+
+namespace {
+// The folder sleep images come from: the one picked on the device, else
+// /.sleep, else /sleep. `exists` is false when none is there yet.
+String wallpaperFolder(bool& exists) {
+  if (!APP_STATE.preferredSleepFolderPath.empty() && Storage.exists(APP_STATE.preferredSleepFolderPath.c_str())) {
+    exists = true;
+    return String(APP_STATE.preferredSleepFolderPath.c_str());
+  }
+  char resolved[16];
+  if (FsHelpers::resolveRootDirectoryIgnoreCase("/.sleep", resolved, sizeof(resolved)) ||
+      FsHelpers::resolveRootDirectoryIgnoreCase("/sleep", resolved, sizeof(resolved))) {
+    exists = true;
+    return String(resolved);
+  }
+  exists = false;
+  return String("/.sleep");
+}
+
+bool isWallpaperFile(const String& path) {
+  return FsHelpers::hasBmpExtension(path.c_str()) || FsHelpers::hasPngExtension(path);
+}
+
+bool sleepModeShowsPng(const uint8_t mode) {
+  return mode == CrossPointSettings::OVERLAY || mode == CrossPointSettings::CUSTOM ||
+         mode == CrossPointSettings::COVER_CUSTOM || mode == CrossPointSettings::COVER_OVERLAY;
+}
+}  // namespace
+
+void CrossPointWebServer::handleWallpaperInfo() const {
+  bool exists = false;
+  JsonDocument doc;
+  doc["folder"] = wallpaperFolder(exists);
+  doc["folderExists"] = exists;
+  doc["pinned"] = APP_STATE.favoriteSleepImagePath.c_str();
+  doc["mode"] = SETTINGS.sleepScreen;
+  String json;
+  serializeJson(doc, json);
+  server->send(200, "application/json", json);
+}
+
+void CrossPointWebServer::handleWallpaperPin() const {
+  const String path = server->hasArg("path") ? normalizeWebPath(server->arg("path")) : String();
+  if (path.isEmpty() || path == "/") {
+    APP_STATE.favoriteSleepImagePath.clear();
+  } else {
+    if (isProtectedPath(path) || !isWallpaperFile(path) || !Storage.exists(path.c_str())) {
+      server->send(400, "text/plain", "Choose a BMP or PNG image on the card");
+      return;
+    }
+    APP_STATE.favoriteSleepImagePath = path.c_str();
+    // As on the device: a PNG only shows in the PNG-capable modes.
+    if (FsHelpers::hasPngExtension(path) && !sleepModeShowsPng(SETTINGS.sleepScreen)) {
+      SETTINGS.sleepScreen = CrossPointSettings::OVERLAY;
+      if (!SETTINGS.saveToFile()) LOG_ERR("WEB", "Failed to save Page Overlay mode for PNG wallpaper");
+    }
+  }
+  if (!APP_STATE.saveToFile()) {
+    LOG_ERR("WEB", "Failed to save pinned wallpaper %s", path.c_str());
+    server->send(500, "text/plain", "Could not save the sleep image");
+    return;
+  }
+  LOG_INF("WEB", "Pinned wallpaper: %s", APP_STATE.favoriteSleepImagePath.c_str());
+  handleWallpaperInfo();
+}
+
+void CrossPointWebServer::handleWallpaperMode() const {
+  const long mode = server->hasArg("mode") ? server->arg("mode").toInt() : -1;
+  if (mode < 0 || mode >= CrossPointSettings::SLEEP_SCREEN_MODE_COUNT) {
+    server->send(400, "text/plain", "Unknown sleep screen mode");
+    return;
+  }
+  SETTINGS.sleepScreen = static_cast<uint8_t>(mode);
+  if (!SETTINGS.saveToFile()) {
+    LOG_ERR("WEB", "Failed to save sleep screen mode %ld", mode);
+    server->send(500, "text/plain", "Could not save the sleep screen");
+    return;
+  }
+  handleWallpaperInfo();
 }
 
 void CrossPointWebServer::handleNotFound() const {

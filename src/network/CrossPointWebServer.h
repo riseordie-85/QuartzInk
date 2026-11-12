@@ -106,6 +106,13 @@ class CrossPointWebServer {
   void handleJszip() const;
   void handleStyleCss() const;
   void handleLogo() const;
+  // QuartzInk dashboard pages, fonts and wallpaper API
+  void handleWallpapersPage() const;
+  void handleStatsPage() const;
+  void handleJostFont(bool bold) const;
+  void handleWallpaperInfo() const;
+  void handleWallpaperPin() const;
+  void handleWallpaperMode() const;
   void handleNotFound() const;
   void handleStatus() const;
   void handleStatsExport() const;

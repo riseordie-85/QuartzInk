@@ -1,4 +1,4 @@
-"""Build the CrossInk web portal: compose pages from shared templates/assets,
+"""Build the QuartzInk web portal: compose pages from shared templates/assets,
 minify, gzip, and emit the C headers that the firmware serves from flash.
 
 Source of truth lives under web/:
@@ -35,7 +35,13 @@ PAGES = {
     "files":    ("FilesPageHtml",    "Files - QuartzInk",          "files",    '  <script src="/js/jszip.min.js"></script>'),
     "settings": ("SettingsPageHtml", "Settings - QuartzInk",       "settings", ""),
     "fonts":    ("FontsPageHtml",    "Fonts - QuartzInk",          "fonts",    ""),
+    "wallpapers": ("WallpapersPageHtml", "Wallpapers - QuartzInk",   "wallpapers", ""),
+    "stats":    ("StatsPageHtml",    "Reading Stats - QuartzInk",  "stats",    ""),
 }
+
+# Short name shown on the right of the black bar (empty on Home).
+PAGE_TITLES = {"files": "Files", "settings": "Settings", "fonts": "Fonts", "wallpapers": "Wallpapers",
+               "stats": "Reading Stats"}
 
 PRESERVE_TAGS = "pre|code|textarea|script|style"
 
@@ -121,7 +127,10 @@ def emit_gzip(path, ident, text):
 # Cache-busting version derived from the shared assets' content.
 style_css = read(WEB, "assets", "style.css")
 logo_png = open(os.path.join(WEB, "assets", "logo.png"), "rb").read()
-v = hashlib.sha1(style_css.encode("utf-8") + logo_png).hexdigest()[:8]
+# NV Jost (OFL), subset to Latin and saved as WOFF2 in web/assets/.
+jost_regular = open(os.path.join(WEB, "assets", "jost.woff2"), "rb").read()
+jost_bold = open(os.path.join(WEB, "assets", "jost-bold.woff2"), "rb").read()
+v = hashlib.sha1(style_css.encode("utf-8") + logo_png + jost_regular + jost_bold).hexdigest()[:8]
 
 base = read(WEB, "templates", "base.html")
 
@@ -136,22 +145,30 @@ for slug, (ident, title, active, head_extra) in PAGES.items():
     page_js = (minified.get(js_path) or read(js_path)).strip()
     script = f"<script>\n{page_js}\n</script>" if page_js else ""
     values = {
-        "title": title, "v": v, "head_extra": head_extra,
+        "title": title, "v": v, "head_extra": head_extra, "slug": slug,
+        "page_title": PAGE_TITLES.get(slug, ""),
         "styles": page_css, "body": page_html, "script": script,
         "cls_home": "", "cls_files": "", "cls_settings": "", "cls_fonts": "",
+        "cls_wallpapers": "", "cls_stats": "",
     }
     values[f"cls_{active}"] = ' class="active"'
     html = minify_html(render(base, values))
     orig, comp = emit_gzip(os.path.join(OUT, f"{ident}.generated.h"), ident, html)
     print(f"{ident:18} {orig:>7}B -> {comp:>6}B gz")
 
-# Shared CSS (served once at /style.css).
-orig, comp = emit_gzip(os.path.join(OUT, "StyleCss.generated.h"), "StyleCss", minify_css(style_css))
+# Shared CSS (served once at /style.css). The font URLs carry the same ?v= hash.
+orig, comp = emit_gzip(os.path.join(OUT, "StyleCss.generated.h"), "StyleCss",
+                       minify_css(style_css.replace("{{ v }}", v)))
 print(f"{'StyleCss':18} {orig:>7}B -> {comp:>6}B gz")
 
 # Logo (already PNG-compressed: served raw at /logo.png).
 emit_header(os.path.join(OUT, "LogoPng.generated.h"), "LogoPng", logo_png)
 print(f"{'LogoPng':18} {len(logo_png):>7}B raw")
+
+# Web fonts (already compressed: served raw).
+emit_header(os.path.join(OUT, "JostRegularWoff2.generated.h"), "JostRegularWoff2", jost_regular)
+emit_header(os.path.join(OUT, "JostBoldWoff2.generated.h"), "JostBoldWoff2", jost_bold)
+print(f"{'JostWoff2':18} {len(jost_regular) + len(jost_bold):>7}B raw")
 
 # jszip stays a separate cached asset; pre-minified, so just gzip it.
 jszip = read(JS_OUT, "jszip.min.js")
