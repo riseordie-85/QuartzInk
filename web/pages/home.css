@@ -32,3 +32,11 @@ h2 {
         font-size: 0.85em;
         font-weight: 600;
       }
+.stats-download-btn {
+        padding: 9px 16px;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        background-color: var(--accent-color);
+        color: white;
+        text-decoration: none;
+      }

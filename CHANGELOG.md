@@ -1,5 +1,9 @@
 ## [QuartzInk Unreleased]
 
+### Added
+
+- Export reading stats from File Transfer: the web page's **Download reading stats** button (or `/api/stats`) gives this reader's totals, reading days and per-book stats as JSON. See `docs/stats-export.md`.
+
 ### Changed
 
 - Opening the menu while reading now shows the Quartz reader chrome: a title bar with Look up, Contents, Bookmark and Page settings, plus a book progress timeline. Page settings holds text size, font, line spacing, margins and alignment in one sheet; Advanced opens the full CrossInk reader menu. Button devices open straight into the sheet and move through it with the page buttons, Left/Right and Confirm.
