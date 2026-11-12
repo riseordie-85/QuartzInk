@@ -1,98 +1,88 @@
-> **This is a personal fork of [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader)** with a focus on improved fonts and minimal reading stats.
+# QuartzInk
 
-### Supported Devices
+**QuartzInk** is a personal fork of [CrossInk](https://github.com/uxjulia/CrossInk), which is itself a fork of
+[CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader). It keeps CrossInk's reader
+underneath and gives it the look and habits of the Quartz apps (Quartz Reader, Quartz Notes and friends):
+a Quartz Home screen with shelves, Quartz-style page settings, and reading stats that can leave the device.
 
-- Xteink X3
-- Xteink X4
-- Xteink X4 Pro
-- Xteink X4 Classic
-- Seeed Studio Sticky
+### Supported devices
 
-## What's different in this fork
+QuartzInk is built and tested on:
 
-My goal with this fork was to maintain the core Crosspoint firmware while integrating my preferred typography and some lightweight reading statistics. I’ve focused on keeping the underlying system stable while layering in a few "nice-to-have" features and UI refinements along the way.
+- **Xteink X4 Pro** (ESP32-S3, touch)
+- **Xteink X3** (ESP32-C3, buttons)
 
-<table>
-  <tr>
-    <td align="center">
-      <img src="./docs/images/bitter-small-15-margin.jpg" alt="Font: Bitter, Size: 12 pt, Margin: 15" /><br/>
-      <em>Font: Bitter, Size: 12 pt, Margin: 15</em>
-    </td>
-    <td align="center">
-      <img src="./docs/images/reading-stats.jpg" alt="Reading Stats with custom front button mapping shown" /><br/>
-      <em>Reading Stats with custom front button mapping shown</em>
-    </td>
-  </tr>
-</table>
-
-### Highlights
-
-- New reader fonts: Lexend Deca and Bitter.
-- Music notation and selected supplemental Unicode glyph support to be able to render Project Hail Mary accurately.
-- Added a custom `Minimal` theme and sleep screen option for the minimalists out there.
-- Added a custom `Dashboard` theme and sleep screen option for reading stats enthusiasts.
-- Reader font sizes: 10 pt, 12 pt, 14 pt, and 16 pt.
-- Added ~~strikethrough~~ support.
-- Made <u>underlines</u> thicker for better visibility.
-- Added support for `<hr>` section breaks.
-- Added support for "redaction" style rendering.
-- Added improved support for tables with simple markup.
-- Added ability to add bookmarks.
-- Added ability to remap front buttons that only applies in the reader.
-- Added Focus Reading and Guide Dots as optional reader modes.
-- Added Force Paragraph Indents for books that render as one giant wall of text.
-- Added ability to pin a sleep image as a favorite. The favorited image will always be displayed when your sleep settings are set to `Custom` or `Cover + Custom` (when no cover is available).
-- Added more in-reader control remapping options for side buttons, short power button clicks, and long-press menu actions, and more.
-- Added ability to mark a book as finished from the in-book menu. A pop-up will also display once 99% of the book is reached. This status allows tracking of total books read.
-- Added ability to move finished books to "Read" folder.
-- In-book menu to quickly adjust reader options without having to exit the book.
-- Reading stats: total books read, total reading time, number of sessions, pages turned, average session time, pages turned per minute. You can also set your reading stats as your sleep screen.
-- All-time reading stats [syncing](./docs/reading-stats-sync.md) between two CrossInk devices.
-- Reading [progress sync](./docs/nearby-position-sync.md) between two CrossInk devices.
-- Added customizable Auto Page Turn Interval (anything between 5-120 seconds).
-- Added ability to view Recent Books as a 3x3 grid view.
-- To view a more detailed list for each version, visit the [releases](https://github.com/uxjulia/CrossInk/releases) page to read release notes.
+CrossInk's other targets (X4, X4 Classic, Seeed Studio Sticky) still build from the same code, but are not tested here.
 
 ---
 
-### Reader Fonts
+## What QuartzInk adds
 
-The default fonts have been replaced with Lexend Deca and Bitter. These fonts have been chosen specifically to improve reading fluency and e-ink performance. These 'sturdier' typefaces feature uniform stroke weights and open geometries, allowing the X4/X3 to render crisp, high-contrast text with font-aliasing on while significantly reducing ghosting and artifacts.
+### Quartz Home and shelves
 
-- [Lexend Deca](https://fonts.google.com/specimen/Lexend+Deca) - A research-backed sans-serif typeface designed to improve reading fluency. Lexend was engineered based on the theory that reading issues are often a design problem (visual crowding) rather than a cognitive one.
-- [Bitter](https://fonts.google.com/specimen/Bitter) - A "contemporary" slab serif typeface for text, it is specially designed for comfortably reading on digital screens. The consistent stroke weight of Bitter helps it render particularly well on e-ink devices. The medium weight has been chosen specifically for improved rendering on the X4/X3.
+Choose **Quartz** in Display → UI Theme (it's the default). Home shows:
 
-The UI now uses [Inter](https://fonts.google.com/specimen/Inter) as the display font which has improved readability at smaller sizes.
+- a black top bar with the clock, Reading Stats and Settings;
+- the current book with its cover, shelf, completion, time taken and time left;
+- the next three recent books;
+- **shelves**: every folder inside `/Books` on the SD card becomes a shelf button that opens it (six per page, swipe
+  for more), so a card laid out as `/Books/Fantasy/…`, `/Books/Horror/…` gets a Fantasy and a Horror shelf;
+- Browse Files, Library and File Transfer along the bottom.
 
-### Music and Supplemental Glyphs
+On the X3 the selected item turns black with white text. Other themes (Lyra, Cover Grid, Classic and the rest) keep
+their own Home screens.
 
-- Built-in reader fonts include music notation, selected Cyrillic glyphs, and the Project Hail Mary CJK fallback ranges. Additional SD-card fonts retain emoji fallback support.
+### Quartz look everywhere
 
----
+With the Quartz theme, every screen uses the same look: a black rounded title bar with the clock, one outlined
+segment control for tabs, and outlined rounded rows that fill black when selected.
 
-### Font Sizes
+### Page settings while reading
 
-CrossInk includes 10 pt, 12 pt, 14 pt, and 16 pt built-in reader font sizes.
+Tap the middle of the page (or press Confirm) for the Quartz page settings:
 
-See [SD Card Fonts](./docs/sd-card-fonts.md) for installing additional font families and size ranges.
+- **Toolbar:** Home, Look up, Contents, Bookmark (hold for the bookmark list) and Page settings.
+- **Size, Font, Spacing, Margins and Alignment** as simple rows, plus an **Advanced** page for line and word spacing,
+  hyphenation, anti-aliasing, Focus Reading, Guide Dots, margins, indents, orientation, images and more.
+- **Apply to all books** makes the current settings everyone's defaults.
+- A **timeline** at the bottom to scrub through the book.
 
----
+### Fonts
 
-### Reader features
+- Built-in reading fonts: **NV Jost** (sans, default) and **Libron** (serif), from Nico Verbruggen's
+  [e-reader fonts](https://github.com/nicoverbruggen/ebook-fonts). On the X4 Pro they scale to any size.
+- More fonts install from the SD card (`/fonts/<Family>/`): `.ttf` files on the X4 Pro, `.cpfont` packs on the X3.
+  `lib/EpdFont/scripts/quartzink-fonts.yaml` builds the X3 packs for Readerly and the rest of the NV core set.
 
-Reader Options, Focus Reading, Guide Dots, Force Paragraph Indents, reading stats, and finished-book behavior are documented in [Reader Features](./docs/reader-features.md).
+### Reading stats that leave the device
 
-### Custom button actions
+- File Transfer's home page has **Download reading stats**, and `GET /api/stats` returns the same JSON
+  ([format](./docs/stats-export.md)).
+- [Quartz Reader](https://github.com/riseordie-85/QuartzReader) can import it straight from the reader
+  (Settings → Import from e-reader, address `http://quartzink.local/`).
 
-CrossInk adds configurable button shortcuts.
+### Sleep and boot screens
 
-See [Controls](./docs/controls.md) for the full action list and defaults.
+- QuartzInk boot logo, and the gem on the Dark and Light sleep screens.
+- **Cover + Overlay**: the book's cover with a transparent PNG frame on top (Page Overlay's PNGs work here too).
+  Overlays made for one screen size stretch to fill the other device.
+- **Choose Sleep Image** in Display → Sleep Screen opens your sleep folder, even the hidden `/.sleep`.
+
+### File Transfer
+
+- The web pages are QuartzInk-branded, at `http://quartzink.local/`.
+- **Files** uploads whole folders with their subfolders; **Fonts** installs a folder of font families at once.
+- Moving a book keeps its reading progress, stats, bookmarks and clippings.
+
+Everything CrossInk already did (reading stats, bookmarks, clippings, dictionaries, Focus Reading, Guide Dots,
+button remapping, progress sync and more) is still here; see the [docs](./docs) and
+[CHANGELOG.md](./CHANGELOG.md).
 
 ---
 
 ## Tips for the best reading experience
 
-CrossInk runs on an ESP32-C3 with limited RAM, so very large folders or complex EPUBs can be slower than they would be on a phone, tablet, or desktop app.
+QuartzInk runs on an ESP32-C3 (X3) or ESP32-S3 (X4 Pro) with limited RAM, so very large folders or complex EPUBs can be slower than they would be on a phone, tablet, or desktop app.
 
 - Keep folders under about 200 files. For the smoothest browsing, aim for 50-100 files per folder.
 - Having 1000+ books on the SD card is fine if they are split into smaller folders, such as by author, series, genre, or read/unread status.
@@ -100,29 +90,26 @@ CrossInk runs on an ESP32-C3 with limited RAM, so very large folders or complex 
 - Text-first EPUBs are the best fit. Large image-heavy EPUBs, scanned books, comics, and omnibus files with thousands of sections may load slowly or fail under memory pressure.
 - As a rough target, EPUBs under 20 MB tend to work the best. Files over 50 MB may still work, but they are more likely to be slow or memory-sensitive, especially if they contain many large images.
 - If an EPUB is unusually slow, try [optimizing](./docs/webserver.md#epub-optimization) it with the built-in web optimizer (via File Transfer) before copying it to the SD card: remove unused high-resolution images, split very large omnibus files, and avoid embedding multiple full font families when possible.
-- Use a reliable SD card and leave some free space. CrossInk stores settings, reading progress, cache files, stats, and generated book data on the card.
+- Use a reliable SD card and leave some free space. QuartzInk stores settings, reading progress, cache files, stats, and generated book data on the card.
 
 ---
 
 ## Installation
 
-The fastest way to install Crossink is by using Inky, Crossink's web companion app: https://inky.crossink.dev/#flash-tools
+GitHub Actions builds QuartzInk on every push to this repository:
 
-Download a `firmware-*.bin` from the [releases page](https://github.com/uxjulia/CrossInk/releases), then flash it with the web installer or command line.
+1. Open the repo's **Actions** tab and pick the newest green **QuartzInk firmware** run.
+2. Download the artifact for your device from **Artifacts**: `quartzink-x4-pro-<commit>` or
+   `quartzink-x3-x4-<commit>`.
+3. Unzip it and flash the `.bin` with [Inky's flash tools](https://inky.crossink.dev/#flash-tools) or PlatformIO.
 
-See [Installation](./docs/installation.md) for step-by-step flashing and revert instructions.
-
----
-
-## Guides & Documentation
-
-Visit [https://www.crossink.dev](https://www.crossink.dev) for more user guides and additional documentation.
+See [Installation](./docs/installation.md) for step-by-step flashing and how to go back to stock firmware.
 
 ---
 
 ## Development quick start
 
-CrossInk uses PlatformIO for building and flashing firmware. See [Getting Started](./docs/development/getting-started.md) for prerequisites, clone setup, and validation commands.
+QuartzInk uses PlatformIO for building and flashing firmware. See [Getting Started](./docs/development/getting-started.md) for prerequisites, clone setup, and validation commands.
 
 ### Nix/NixOS
 
@@ -162,12 +149,11 @@ See [Testing and Debugging](./docs/development/testing-debugging.md) for serial 
 
 ---
 
-## Notice on Contributions
+## Credits
 
-This repository does not accept pull requests. Feature requests may be opened in [discussions](https://github.com/uxjulia/CrossInk/discussions), but major features requiring ongoing support should be directed upstream to [CrossPoint](https://github.com/crosspoint-reader/crosspoint-reader).
+QuartzInk would not exist without [CrossInk](https://github.com/uxjulia/CrossInk) by uxjulia and
+[CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) and its contributors. If you like this
+firmware, please consider supporting them. NV Jost, Libron and the other NV fonts are by
+[Nico Verbruggen](https://github.com/nicoverbruggen/ebook-fonts), under the SIL Open Font License.
 
----
-
-If you'd like to show some love and support ongoing development, please consider supporting me on Ko-fi.
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q5Q01M6S7)
+QuartzInk is released under the same [MIT License](./LICENSE) as CrossPoint.
