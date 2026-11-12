@@ -147,10 +147,13 @@ int pngOverlayDraw(PNGDRAW* pDraw) {
                                 : -1;
   }
 
-  const int destY = ctx->dstY + (int)(pDraw->y * ctx->yScale);
-  if (destY == ctx->lastDstY) return 1;  // skip duplicate rows from Y scaling
-  ctx->lastDstY = destY;
-  if (destY < 0 || destY >= ctx->screenH) return 1;
+  // One source row covers [rowStart, rowEnd): one row when shrinking, several
+  // when stretching taller, so an upscaled overlay has no gaps between rows.
+  const int rowStart = ctx->dstY + (int)(pDraw->y * ctx->yScale);
+  int rowEnd = ctx->dstY + (int)((pDraw->y + 1) * ctx->yScale);
+  if (rowEnd <= rowStart) rowEnd = rowStart + 1;
+  if (rowStart == ctx->lastDstY) return 1;  // skip duplicate rows from Y scaling
+  ctx->lastDstY = rowStart;
 
   const int srcWidth = ctx->srcWidth;
   const int dstWidth = ctx->dstWidth;
@@ -158,71 +161,74 @@ int pngOverlayDraw(PNGDRAW* pDraw) {
   const int pixelType = pDraw->iPixelType;
   const int hasAlpha = pDraw->iHasAlpha;
 
-  int srcX = 0, error = 0;
-  for (int dstX = 0; dstX < dstWidth; dstX++) {
-    const int outX = ctx->dstX + dstX;
-    if (outX >= 0 && outX < ctx->screenW) {
-      uint8_t alpha = 255, gray = 0;
-      switch (pixelType) {
-        case PNG_PIXEL_TRUECOLOR_ALPHA: {
-          const uint8_t* p = &pixels[srcX * 4];
-          alpha = p[3];
-          gray = (uint8_t)((p[0] * 77 + p[1] * 150 + p[2] * 29) >> 8);
-          break;
-        }
-        case PNG_PIXEL_GRAY_ALPHA:
-          gray = pixels[srcX * 2];
-          alpha = pixels[srcX * 2 + 1];
-          break;
-        case PNG_PIXEL_TRUECOLOR: {
-          const uint8_t* p = &pixels[srcX * 3];
-          gray = (uint8_t)((p[0] * 77 + p[1] * 150 + p[2] * 29) >> 8);
-          // tRNS color-key: if pixel matches the designated transparent color, skip it
-          if (ctx->transparentColor >= 0 && p[0] == (uint8_t)((ctx->transparentColor >> 16) & 0xFF) &&
-              p[1] == (uint8_t)((ctx->transparentColor >> 8) & 0xFF) &&
-              p[2] == (uint8_t)(ctx->transparentColor & 0xFF)) {
-            alpha = 0;
-          }
-          break;
-        }
-        case PNG_PIXEL_GRAYSCALE:
-          gray = pixels[srcX];
-          // tRNS color-key: transparent gray value stored in low byte
-          if (ctx->transparentColor >= 0 && gray == (uint8_t)(ctx->transparentColor & 0xFF)) {
-            alpha = 0;
-          }
-          break;
-        case PNG_PIXEL_INDEXED:
-          if (pDraw->pPalette) {
-            const uint8_t idx = pixels[srcX];
-            const uint8_t* p = &pDraw->pPalette[idx * 3];
+  for (int destY = rowStart; destY < rowEnd; destY++) {
+    if (destY < 0 || destY >= ctx->screenH) continue;
+    int srcX = 0, error = 0;
+    for (int dstX = 0; dstX < dstWidth; dstX++) {
+      const int outX = ctx->dstX + dstX;
+      if (outX >= 0 && outX < ctx->screenW) {
+        uint8_t alpha = 255, gray = 0;
+        switch (pixelType) {
+          case PNG_PIXEL_TRUECOLOR_ALPHA: {
+            const uint8_t* p = &pixels[srcX * 4];
+            alpha = p[3];
             gray = (uint8_t)((p[0] * 77 + p[1] * 150 + p[2] * 29) >> 8);
-            if (hasAlpha) alpha = pDraw->pPalette[768 + idx];
+            break;
           }
-          break;
-        default:
-          gray = pixels[srcX];
-          break;
-      }
-
-      if (alpha >= 128) {
-        const auto mode = ctx->renderer->getRenderMode();
-        if (mode == GfxRenderer::BW) {
-          ctx->renderer->drawPixel(outX, destY, gray < 128);  // true = black, false = white
-        } else {
-          const auto pixel =
-              grayPlanePixel(gray >> 6, mode == GfxRenderer::GRAYSCALE_MSB, ctx->renderer->grayPlanesAreAbsolute());
-          if (pixel.write) ctx->renderer->drawPixel(outX, destY, pixel.black);
+          case PNG_PIXEL_GRAY_ALPHA:
+            gray = pixels[srcX * 2];
+            alpha = pixels[srcX * 2 + 1];
+            break;
+          case PNG_PIXEL_TRUECOLOR: {
+            const uint8_t* p = &pixels[srcX * 3];
+            gray = (uint8_t)((p[0] * 77 + p[1] * 150 + p[2] * 29) >> 8);
+            // tRNS color-key: if pixel matches the designated transparent color, skip it
+            if (ctx->transparentColor >= 0 && p[0] == (uint8_t)((ctx->transparentColor >> 16) & 0xFF) &&
+                p[1] == (uint8_t)((ctx->transparentColor >> 8) & 0xFF) &&
+                p[2] == (uint8_t)(ctx->transparentColor & 0xFF)) {
+              alpha = 0;
+            }
+            break;
+          }
+          case PNG_PIXEL_GRAYSCALE:
+            gray = pixels[srcX];
+            // tRNS color-key: transparent gray value stored in low byte
+            if (ctx->transparentColor >= 0 && gray == (uint8_t)(ctx->transparentColor & 0xFF)) {
+              alpha = 0;
+            }
+            break;
+          case PNG_PIXEL_INDEXED:
+            if (pDraw->pPalette) {
+              const uint8_t idx = pixels[srcX];
+              const uint8_t* p = &pDraw->pPalette[idx * 3];
+              gray = (uint8_t)((p[0] * 77 + p[1] * 150 + p[2] * 29) >> 8);
+              if (hasAlpha) alpha = pDraw->pPalette[768 + idx];
+            }
+            break;
+          default:
+            gray = pixels[srcX];
+            break;
         }
-      }
-      // alpha < 128: transparent — leave the reader page pixel intact
-    }
 
-    // Bresenham-style X stepping (handles downscaling; 1:1 when srcWidth == dstWidth)
-    error += srcWidth;
-    while (error >= dstWidth) {
-      error -= dstWidth;
-      srcX++;
+        if (alpha >= 128) {
+          const auto mode = ctx->renderer->getRenderMode();
+          if (mode == GfxRenderer::BW) {
+            ctx->renderer->drawPixel(outX, destY, gray < 128);  // true = black, false = white
+          } else {
+            const auto pixel =
+                grayPlanePixel(gray >> 6, mode == GfxRenderer::GRAYSCALE_MSB, ctx->renderer->grayPlanesAreAbsolute());
+            if (pixel.write) ctx->renderer->drawPixel(outX, destY, pixel.black);
+          }
+        }
+        // alpha < 128: transparent — leave the reader page pixel intact
+      }
+
+      // Bresenham-style X stepping (shrinks, stretches, or 1:1 when srcWidth == dstWidth)
+      error += srcWidth;
+      while (error >= dstWidth) {
+        error -= dstWidth;
+        srcX++;
+      }
     }
   }
   return 1;
@@ -1190,7 +1196,16 @@ void SleepActivity::renderOverlaySleepScreen(const OverlayBackground background)
     const int srcW = png->getWidth(), srcH = png->getHeight();
     float yScale = 1.0f;
     int dstW = srcW, dstH = srcH;
-    if (srcW > pageWidth || srcH > pageHeight) {
+    // QuartzInk: an overlay made for a full screen (within 20% each way) is
+    // stretched to fill this one, so a 480x800 frame also covers the X3's
+    // 528x792 panel instead of leaving bare strips at the sides.
+    const bool nearFullScreen = srcW * 5 >= pageWidth * 4 && srcW * 4 <= pageWidth * 5 && srcH * 5 >= pageHeight * 4 &&
+                                srcH * 4 <= pageHeight * 5;
+    if (nearFullScreen) {
+      dstW = pageWidth;
+      dstH = pageHeight;
+      yScale = (float)dstH / srcH;
+    } else if (srcW > pageWidth || srcH > pageHeight) {
       const float scaleX = (float)pageWidth / srcW, scaleY = (float)pageHeight / srcH;
       const float scale = (scaleX < scaleY) ? scaleX : scaleY;
       dstW = (int)(srcW * scale);
