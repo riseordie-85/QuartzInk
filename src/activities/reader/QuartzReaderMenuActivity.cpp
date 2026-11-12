@@ -103,6 +103,8 @@ void QuartzReaderMenuActivity::onEnter() {
   app.on(ACTION_ADVANCED, &QuartzReaderMenuActivity::onAdvanced, this);
   app.on(ACTION_DONE, &QuartzReaderMenuActivity::onDone, this);
   app.on(ACTION_SEEK, &QuartzReaderMenuActivity::onSeek, this);
+  app.on(ACTION_ADV, &QuartzReaderMenuActivity::onAdv, this);
+  app.on(ACTION_ADV_BACK, &QuartzReaderMenuActivity::onAdvBack, this);
   if (app.handlerOverflowed()) LOG_ERR("QZM", "Quartz menu handler table overflowed");
   app.setScreen(&QuartzReaderMenuActivity::menuScreen, this);
   requestUpdate();
@@ -120,6 +122,17 @@ QuartzReaderMenuActivity::QuickSettings QuartzReaderMenuActivity::captureSetting
   value.wordSpacing = SETTINGS.wordSpacing;
   value.marginHorizontal = SETTINGS.screenMarginHorizontal;
   value.alignment = SETTINGS.paragraphAlignment;
+  value.marginVertical = SETTINGS.screenMarginVertical;
+  value.orientation = SETTINGS.orientation;
+  value.textAntiAliasing = SETTINGS.textAntiAliasing;
+  value.focusReading = SETTINGS.focusReadingEnabled;
+  value.guideReading = SETTINGS.guideReadingEnabled;
+  value.hyphenation = SETTINGS.hyphenationEnabled;
+  value.publisherPages = SETTINGS.publisherPageNumbers;
+  value.extraSpacing = SETTINGS.extraParagraphSpacing;
+  value.forceIndents = SETTINGS.forceParagraphIndents;
+  value.embeddedStyle = SETTINGS.embeddedStyle;
+  value.imageRendering = SETTINGS.imageRendering;
   return value;
 }
 
@@ -132,14 +145,30 @@ void QuartzReaderMenuActivity::applySettings() const {
   SETTINGS.wordSpacing = current.wordSpacing;
   SETTINGS.screenMarginHorizontal = current.marginHorizontal;
   SETTINGS.paragraphAlignment = current.alignment;
+  SETTINGS.screenMarginVertical = current.marginVertical;
+  SETTINGS.orientation = current.orientation;
+  SETTINGS.textAntiAliasing = current.textAntiAliasing;
+  SETTINGS.focusReadingEnabled = current.focusReading;
+  SETTINGS.guideReadingEnabled = current.guideReading;
+  SETTINGS.hyphenationEnabled = current.hyphenation;
+  SETTINGS.publisherPageNumbers = current.publisherPages;
+  SETTINGS.extraParagraphSpacing = current.extraSpacing;
+  SETTINGS.forceParagraphIndents = current.forceIndents;
+  SETTINGS.embeddedStyle = current.embeddedStyle;
+  SETTINGS.imageRendering = current.imageRendering;
 }
 
 bool QuartzReaderMenuActivity::settingsChanged() const {
-  return current.fontFamily != initial.fontFamily ||
-         std::strcmp(current.sdFontFamilyName, initial.sdFontFamilyName) != 0 ||
-         current.pointSize != initial.pointSize || current.lineHeightPercent != initial.lineHeightPercent ||
-         current.wordSpacing != initial.wordSpacing || current.marginHorizontal != initial.marginHorizontal ||
-         current.alignment != initial.alignment;
+  const QuickSettings& a = current;
+  const QuickSettings& b = initial;
+  return a.fontFamily != b.fontFamily || std::strcmp(a.sdFontFamilyName, b.sdFontFamilyName) != 0 ||
+         a.pointSize != b.pointSize || a.lineHeightPercent != b.lineHeightPercent || a.wordSpacing != b.wordSpacing ||
+         a.marginHorizontal != b.marginHorizontal || a.alignment != b.alignment ||
+         a.marginVertical != b.marginVertical || a.orientation != b.orientation ||
+         a.textAntiAliasing != b.textAntiAliasing || a.focusReading != b.focusReading ||
+         a.guideReading != b.guideReading || a.hyphenation != b.hyphenation || a.publisherPages != b.publisherPages ||
+         a.extraSpacing != b.extraSpacing || a.forceIndents != b.forceIndents || a.embeddedStyle != b.embeddedStyle ||
+         a.imageRendering != b.imageRendering;
 }
 
 void QuartzReaderMenuActivity::loadFontSizes() {
@@ -366,8 +395,7 @@ void QuartzReaderMenuActivity::onOption(const fui::ActionEvent& event, void* use
 }
 
 void QuartzReaderMenuActivity::onAdvanced(const fui::ActionEvent&, void* user) {
-  static_cast<QuartzReaderMenuActivity*>(user)->closeMenu(false,
-                                                          static_cast<int>(EpubReaderMenuAction::READER_OPTIONS));
+  static_cast<QuartzReaderMenuActivity*>(user)->openAdvanced();
 }
 
 void QuartzReaderMenuActivity::onDone(const fui::ActionEvent&, void* user) {
@@ -428,6 +456,11 @@ void QuartzReaderMenuActivity::loop() {
     }
   }
 
+  if (advancedOpen) {
+    advancedLoop();
+    return;
+  }
+
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
     closeMenu(true, -1);
     return;
@@ -473,7 +506,7 @@ void QuartzReaderMenuActivity::loop() {
         activateTool(toolAt(focusTool));
         return;
       case Row::Advanced:
-        closeMenu(false, static_cast<int>(EpubReaderMenuAction::READER_OPTIONS));
+        openAdvanced();
         return;
       default:
         // Confirm walks down the rows, so a one-handed reader can reach every
@@ -512,7 +545,11 @@ void QuartzReaderMenuActivity::buildScreen(UiApp::ScreenType& screen) {
   {
     const fui::Rect sheet{area.x, static_cast<int16_t>(topBottom + 10), area.width,
                           static_cast<int16_t>(area.bottom() - topBottom - 10)};
-    drawSheet(screen, sheet);
+    if (advancedOpen) {
+      drawAdvanced(screen, sheet);
+    } else {
+      drawSheet(screen, sheet);
+    }
   }
 }
 

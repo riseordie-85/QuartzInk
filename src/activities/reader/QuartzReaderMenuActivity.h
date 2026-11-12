@@ -2,6 +2,7 @@
 
 #include <FreeInkApp.h>
 #include <FreeInkUIGfxRenderer.h>
+#include <I18n.h>
 
 #include <array>
 #include <atomic>
@@ -52,12 +53,49 @@ class QuartzReaderMenuActivity final : public Activity {
     uint8_t wordSpacing = 0;
     uint8_t marginHorizontal = 0;
     uint8_t alignment = 0;
+    // Advanced page.
+    uint8_t marginVertical = 0;
+    uint8_t orientation = 0;
+    uint8_t textAntiAliasing = 0;
+    uint8_t focusReading = 0;
+    uint8_t guideReading = 0;
+    uint8_t hyphenation = 0;
+    uint8_t publisherPages = 0;
+    uint8_t extraSpacing = 0;
+    uint8_t forceIndents = 0;
+    uint8_t embeddedStyle = 0;
+    uint8_t imageRendering = 0;
   };
+
+  // Advanced page rows, top to bottom. Headers are not focusable.
+  enum class Adv : uint8_t {
+    HeaderText,
+    LineHeight,
+    WordSpacing,
+    Hyphenation,
+    TextAa,
+    Focus,
+    GuideDots,
+    HeaderLayout,
+    MarginVertical,
+    MarginHorizontal,
+    ExtraSpacing,
+    ForceIndents,
+    Orientation,
+    Images,
+    PublisherPages,
+    EmbeddedStyle,
+    HeaderMore,
+    AllOptions,
+    Count
+  };
+  enum class AdvKind : uint8_t { Header, Stepper, Toggle, Cycle, Link };
+  static constexpr uint8_t ADV_ROW_COUNT = static_cast<uint8_t>(Adv::Count);
 
   enum class Row : uint8_t { Toolbar, Size, Font, Spacing, Margins, Align, Advanced, Count };
   enum class Tool : uint8_t { Home, Contents, Bookmark, Lookup, PageSettings };
 
-  using UiApp = freeink::ui::FreeInkApp<40, 8>;  // 7 actions below; keep MaxHandlers >= that count
+  using UiApp = freeink::ui::FreeInkApp<48, 10>;  // 9 actions below; keep MaxHandlers >= that count
   static constexpr freeink::ui::ActionId ACTION_DISMISS = 1;
   static constexpr freeink::ui::ActionId ACTION_PANEL = 2;  // swallows taps on blank panel space
   static constexpr freeink::ui::ActionId ACTION_TOOL = 3;
@@ -65,6 +103,8 @@ class QuartzReaderMenuActivity final : public Activity {
   static constexpr freeink::ui::ActionId ACTION_ADVANCED = 5;
   static constexpr freeink::ui::ActionId ACTION_DONE = 6;
   static constexpr freeink::ui::ActionId ACTION_SEEK = 7;  // timeline drag; dragPermille = position
+  static constexpr freeink::ui::ActionId ACTION_ADV = 8;   // value = row * 4 + part (0 row, 1 minus, 2 plus)
+  static constexpr freeink::ui::ActionId ACTION_ADV_BACK = 9;
   static constexpr size_t MAX_FONT_SIZES = 24;
   // Button devices: holding Confirm this long on the bookmark icon opens the list.
   static constexpr unsigned long BOOKMARK_LIST_HOLD_MS = 600;
@@ -78,6 +118,10 @@ class QuartzReaderMenuActivity final : public Activity {
   uint8_t fontSizeCount = 0;
 
   bool sheetOpen = false;
+  bool advancedOpen = false;
+  uint8_t advTop = 0;    // first Advanced row drawn
+  uint8_t advShown = 0;  // rows that fit, set while drawing
+  Adv advFocus = Adv::LineHeight;
   // Timeline scrubbing: the thumb follows the finger (0-1000) and the book jumps
   // there on release. -1 when not scrubbing.
   int16_t seekPermille = -1;         // where the thumb is drawn
@@ -101,6 +145,21 @@ class QuartzReaderMenuActivity final : public Activity {
   static void onAdvanced(const freeink::ui::ActionEvent& event, void* user);
   static void onDone(const freeink::ui::ActionEvent& event, void* user);
   static void onSeek(const freeink::ui::ActionEvent& event, void* user);
+  static void onAdv(const freeink::ui::ActionEvent& event, void* user);
+  static void onAdvBack(const freeink::ui::ActionEvent& event, void* user);
+
+  // Advanced page (QuartzReaderMenuAdvanced.cpp).
+  static AdvKind advKind(Adv row);
+  static StrId advLabel(Adv row);
+  const char* advValue(Adv row, char* buffer, size_t size) const;
+  bool advToggleValue(Adv row) const;
+  void openAdvanced();
+  void advChange(Adv row, int direction);  // direction: -1/+1 step or cycle, 0 = toggle/activate
+  void advMoveFocus(bool down);
+  void advScroll(int rows);
+  void advKeepFocusVisible();
+  void drawAdvanced(UiApp::ScreenType& screen, freeink::ui::Rect area);
+  bool advancedLoop();
 
   void buildScreen(UiApp::ScreenType& screen);
   int16_t drawTopBar(UiApp::ScreenType& screen, freeink::ui::Rect area);
