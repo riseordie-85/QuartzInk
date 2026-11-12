@@ -572,6 +572,12 @@ void SleepActivity::onEnter() {
     case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER):
       return renderCoverSleepScreen();
     case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM):
+      if (APP_STATE.lastSleepFromReader) {
+        return renderCoverSleepScreen();
+      } else {
+        return renderCustomSleepScreen();
+      }
+    case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_OVERLAY):
       // QuartzInk: in a book, the cover with a PNG overlay (frame) on top;
       // elsewhere, the custom image.
       if (APP_STATE.lastSleepFromReader) {
@@ -611,9 +617,9 @@ bool SleepActivity::rendersBeforeExit() const {
     case CrossPointSettings::SLEEP_SCREEN_MODE::CUSTOM:
       return true;
     case CrossPointSettings::SLEEP_SCREEN_MODE::COVER:
-    case CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM: {
-      if (SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM &&
-          !APP_STATE.lastSleepFromReader) {
+    case CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM:
+    case CrossPointSettings::SLEEP_SCREEN_MODE::COVER_OVERLAY: {
+      if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::COVER && !APP_STATE.lastSleepFromReader) {
         return true;
       }
       const std::string& path = currentBookPath.empty() ? APP_STATE.openEpubPath : currentBookPath;
@@ -885,6 +891,7 @@ void SleepActivity::renderCoverSleepScreen() const {
   void (SleepActivity::*renderNoCoverSleepScreen)() const;
   switch (SETTINGS.sleepScreen) {
     case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM):
+    case (CrossPointSettings::SLEEP_SCREEN_MODE::COVER_OVERLAY):
       renderNoCoverSleepScreen = &SleepActivity::renderCustomSleepScreen;
       break;
     default:

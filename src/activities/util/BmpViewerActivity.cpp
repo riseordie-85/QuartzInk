@@ -19,12 +19,13 @@
 #include "components/UITheme.h"
 #include "fontIds.h"
 
-// QuartzInk: Page Overlay, Custom and Cover + Custom all draw pinned PNGs, so
+// QuartzInk: Page Overlay, Custom, Cover + Custom and Cover + Overlay all draw pinned PNGs, so
 // pinning one only switches the mode away from the others.
 static bool sleepModeUsesPngImages() {
   return SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::OVERLAY ||
          SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::CUSTOM ||
-         SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM;
+         SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::COVER_CUSTOM ||
+         SETTINGS.sleepScreen == CrossPointSettings::SLEEP_SCREEN_MODE::COVER_OVERLAY;
 }
 
 namespace {
