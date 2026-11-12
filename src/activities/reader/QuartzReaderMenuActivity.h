@@ -57,7 +57,7 @@ class QuartzReaderMenuActivity final : public Activity {
   enum class Row : uint8_t { Toolbar, Size, Font, Spacing, Margins, Align, Advanced, Count };
   enum class Tool : uint8_t { Home, Contents, Bookmark, Lookup, PageSettings };
 
-  using UiApp = freeink::ui::FreeInkApp<40, 6>;
+  using UiApp = freeink::ui::FreeInkApp<40, 8>;  // 7 actions below; keep MaxHandlers >= that count
   static constexpr freeink::ui::ActionId ACTION_DISMISS = 1;
   static constexpr freeink::ui::ActionId ACTION_PANEL = 2;  // swallows taps on blank panel space
   static constexpr freeink::ui::ActionId ACTION_TOOL = 3;
