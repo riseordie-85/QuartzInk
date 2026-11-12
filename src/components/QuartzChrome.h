@@ -27,6 +27,11 @@ void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* t
 // Returns the logo's height.
 int drawLogo(const GfxRenderer& renderer, int y);
 
+// The battery icon and percentage in white, for drawing on a black bar.
+// Anchored by its right edge (alignRight) or its left edge at `x`, vertically
+// centered on `centerY`. Honors Hide Battery %. Returns the width it used.
+int drawBatteryOnBlack(const GfxRenderer& renderer, int x, int centerY, bool alignRight);
+
 // Outlined, rounded list rows; the selected row fills black with white text.
 freeink::ui::StyleSet rowStyles();
 

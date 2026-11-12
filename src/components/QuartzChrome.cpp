@@ -2,14 +2,18 @@
 
 #include <FreeInkUIIcon.h>
 #include <HalClock.h>
+#include <HalPowerManager.h>
 
 #include <algorithm>
+#include <cstdio>
 
 #include "CrossPointSettings.h"
+#include "UITheme.h"
 #include "UIThemeTokens.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/touchHeaderIcons.h"
+#include "fontIds.h"
 #include "images/QuartzLogo.h"
 
 namespace fui = freeink::ui;
@@ -42,7 +46,10 @@ void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* t
   }
 
   const auto tokens = uiThemeTokens(target);
-  // Right side: the caller's label, or the clock like the Quartz Home bar.
+  // Far right: the battery, white on the bar.
+  const int batteryW = drawBatteryOnBlack(renderer, bar.right() - 18, bar.y + bar.height / 2, true);
+  const int16_t rightEdge = static_cast<int16_t>(bar.right() - 18 - (batteryW > 0 ? batteryW + 14 : 0));
+  // Then the caller's label, or the clock like the Quartz Home bar.
   char clock[16] = "";
   const char* right = rightLabel;
   if (right == nullptr && halClock.isAvailable() &&
@@ -57,8 +64,7 @@ void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* t
     rightStyle.maxLines = 1;
     rightW = static_cast<int16_t>(
         std::min<int>(bar.width / 2, target.measureText(rightStyle.font, right, rightStyle).width + 4));
-    target.text(fui::Rect{static_cast<int16_t>(bar.right() - 18 - rightW), bar.y, rightW, bar.height}, right,
-                rightStyle);
+    target.text(fui::Rect{static_cast<int16_t>(rightEdge - rightW), bar.y, rightW, bar.height}, right, rightStyle);
   }
 
   fui::TextStyle style = tokens.titleText;
@@ -66,7 +72,7 @@ void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* t
   style.color = fui::Color::White;
   style.bold = true;
   style.maxLines = 1;
-  const int titleRight = bar.right() - 18 - (rightW > 0 ? rightW + 12 : 0);
+  const int titleRight = rightEdge - (rightW > 0 ? rightW + 12 : 0);
   target.text(fui::Rect{titleX, bar.y, static_cast<int16_t>(std::max(0, titleRight - titleX)), bar.height},
               title != nullptr ? title : "", style);
 }
@@ -84,6 +90,25 @@ int drawLogo(const GfxRenderer& renderer, const int y) {
                           static_cast<int16_t>(QUARTZ_LOGO_HEIGHT)},
                 logo, fui::BitmapMode::Center);
   return QUARTZ_LOGO_HEIGHT;
+}
+
+int drawBatteryOnBlack(const GfxRenderer& renderer, const int x, const int centerY, const bool alignRight) {
+  const auto& metrics = UITheme::getInstance().getMetrics();
+  const bool showPercent = SETTINGS.hideBatteryPercentage != CrossPointSettings::HIDE_ALWAYS;
+  int textW = 0;
+  if (showPercent) {
+    char percent[8];
+    std::snprintf(percent, sizeof(percent), "%u%%", static_cast<unsigned>(powerManager.getBatteryPercentage()));
+    textW = renderer.getTextWidth(SMALL_FONT_ID, percent);
+  }
+  constexpr int GAP = 4;  // matches the theme's space between percentage and icon
+  const int totalW = metrics.batteryWidth + (showPercent ? textW + GAP : 0);
+  // drawBatteryRight takes the icon's left edge and puts the percentage before it.
+  const int iconX = alignRight ? x - metrics.batteryWidth : x + totalW - metrics.batteryWidth;
+  const int top = centerY - renderer.getLineHeight(SMALL_FONT_ID) / 2;
+  GUI.drawBatteryRight(renderer, Rect{iconX, top, metrics.batteryWidth, metrics.batteryHeight}, showPercent,
+                       /*foregroundBlack=*/false);
+  return totalW;
 }
 
 fui::StyleSet rowStyles() {

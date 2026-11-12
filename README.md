@@ -22,7 +22,7 @@ CrossInk's other targets (X4, X4 Classic, Seeed Studio Sticky) still build from 
 
 Choose **Quartz** in Display → UI Theme (it's the default). Home shows:
 
-- a black top bar with the clock, Reading Stats and Settings;
+- a black top bar with the clock, battery, Reading Stats and Settings;
 - the current book with its cover, shelf, completion, time taken and time left;
 - the next three recent books;
 - **shelves**: every folder inside `/Books` on the SD card becomes a shelf button that opens it (six per page, swipe
@@ -34,7 +34,7 @@ their own Home screens.
 
 ### Quartz look everywhere
 
-With the Quartz theme, every screen uses the same look: a black rounded title bar with the clock, one outlined
+With the Quartz theme, every screen uses the same look: a black rounded title bar with the clock and battery, one outlined
 segment control for tabs, and outlined rounded rows that fill black when selected.
 
 ### Page settings while reading

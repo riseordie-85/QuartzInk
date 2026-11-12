@@ -16,6 +16,7 @@
 
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
+#include "QuartzChrome.h"
 #include "UITheme.h"
 #include "activities/reader/BookReadingStats.h"
 #include "components/icons/listIcons.h"
@@ -342,6 +343,10 @@ void QuartzHomeUi::drawTopBar(UiScreen& screen, const fui::Rect rect) {
   }
   target.text(fui::Rect{static_cast<int16_t>(rect.x + 20), rect.y, static_cast<int16_t>(rect.width / 2), rect.height},
               clock, textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left, true));
+  // Battery after the time, white on the bar.
+  const auto clockStyle = textStyle(fui::FONT_SLOT_BODY, fui::TextAlign::Left, true);
+  const int clockW = clock[0] != '\0' ? target.measureText(clockStyle.font, clock, clockStyle).width + 16 : 0;
+  QuartzChrome::drawBatteryOnBlack(renderer, rect.x + 20 + clockW, rect.y + rect.height / 2, false);
 
   const bool showFocus = !BoardConfig::hasTouch();
   const auto icon = [&](const fui::Rect slot, const freeink::Icon& glyph, const int action) {
