@@ -1,6 +1,7 @@
 #include "HomeActivity.h"
 
 #include <Bitmap.h>
+#include <BoardConfig.h>
 #include <Epub.h>
 #include <FsHelpers.h>
 #include <GfxRenderer.h>
@@ -552,7 +553,7 @@ int HomeActivity::getMenuItemCount() const {
 void HomeActivity::loadRecentBooks(int maxBooks) {
   recentBooks.clear();
   const auto& books = RECENT_BOOKS.getBooks();
-  recentBooks.reserve(coverGridUi ? maxBooks : std::min(static_cast<int>(books.size()), maxBooks));
+  recentBooks.reserve(coverGridUi || quartzUi ? maxBooks : std::min(static_cast<int>(books.size()), maxBooks));
 
   for (const RecentBook& storedBook : books) {
     // Limit to maximum number of recent books
@@ -577,8 +578,8 @@ void HomeActivity::loadCoverGridThumbnails() {
   for (size_t i = 0; i < recentBooks.size(); ++i) {
     auto& book = recentBooks[i];
     if (book.coverState == RecentBook::CoverState::Missing || !Storage.exists(book.path.c_str())) continue;
-    const int width = coverGridUi->thumbWidthFor(i);
-    const int height = coverGridUi->thumbHeightFor(i);
+    const int width = quartzUi ? quartzUi->thumbWidthFor(i) : coverGridUi->thumbWidthFor(i);
+    const int height = quartzUi ? quartzUi->thumbHeightFor(i) : coverGridUi->thumbHeightFor(i);
     if (book.coverBmpPath.empty()) {
       if (FsHelpers::hasEpubExtension(book.path)) {
         auto epub = makeUniqueNoThrow<Epub>(book.path, "/.crosspoint");
@@ -813,7 +814,9 @@ void HomeActivity::onEnter() {
   Activity::onEnter();
 
   hasOpdsServers = OPDS_STORE.hasServers();
-  if (UITheme::hasCoverGridHome()) {
+  quartzUi = makeUniqueNoThrow<QuartzHomeUi>(renderer);
+  if (!quartzUi) LOG_ERR("HOME", "Cannot allocate Quartz Home UI; using the theme's Home");
+  if (!quartzUi && UITheme::hasCoverGridHome()) {
     coverGridUi = makeUniqueNoThrow<CoverGridHomeUi>(renderer);
     if (!coverGridUi) LOG_ERR("HOME", "Cannot allocate cover grid UI; using standard Home");
   }
@@ -839,8 +842,9 @@ void HomeActivity::onEnter() {
 
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int recentBooksToLoad =
-      coverGridUi ? CoverGridHomeUi::MAX_BOOKS
-                  : std::min(kMaxCachedBooks, std::max(metrics.homeRecentBooksCount, HOME_BOOK_SWAP_RECENT_COUNT));
+      quartzUi      ? QuartzHomeUi::MAX_BOOKS
+      : coverGridUi ? CoverGridHomeUi::MAX_BOOKS
+                    : std::min(kMaxCachedBooks, std::max(metrics.homeRecentBooksCount, HOME_BOOK_SWAP_RECENT_COUNT));
   RECENT_BOOKS.ensureLoaded();
   loadRecentBooks(recentBooksToLoad);
   gridHasContinueReading = !recentBooks.empty();
@@ -866,7 +870,8 @@ void HomeActivity::onEnter() {
     return false;
   };
 
-  if (!selectInitialBook(initialBookPath)) {
+  // Quartz Home always shows the most recent book as the current one.
+  if (!quartzUi && !selectInitialBook(initialBookPath)) {
     selectInitialBook(APP_STATE.openEpubPath);
   }
 
@@ -878,7 +883,9 @@ void HomeActivity::onEnter() {
   }
   updateHighlightedBookContext(false);
 
-  if (coverGridUi) {
+  if (quartzUi) {
+    beginQuartzHome();
+  } else if (coverGridUi) {
     const int base = static_cast<int>(recentBooks.size());
     switch (initialMenuItem) {
       case HomeMenuItem::FILE_BROWSER:
@@ -923,6 +930,7 @@ int HomeActivity::getHighlightedBookIndex() const {
     return -1;
   }
 
+  if (quartzUi) return 0;
   if (coverGridUi) {
     return selectorIndex < static_cast<int>(recentBooks.size()) ? selectorIndex : 0;
   }
@@ -933,11 +941,12 @@ int HomeActivity::getHighlightedBookIndex() const {
 }
 
 int HomeActivity::getVisibleRecentBookCount() const {
-  return coverGridUi ? static_cast<int>(recentBooks.size()) : ::getVisibleRecentBookCount(recentBooks);
+  return coverGridUi || quartzUi ? static_cast<int>(recentBooks.size()) : ::getVisibleRecentBookCount(recentBooks);
 }
 
 bool HomeActivity::canSwapHomeBook() const {
-  return !coverGridUi && UITheme::getInstance().getMetrics().homeRecentBooksCount == 1 && recentBooks.size() > 1;
+  return !coverGridUi && !quartzUi && UITheme::getInstance().getMetrics().homeRecentBooksCount == 1 &&
+         recentBooks.size() > 1;
 }
 
 void HomeActivity::showNextRecentBookOnHome() {
@@ -1061,6 +1070,7 @@ void HomeActivity::updateHighlightedBookContext(const bool allowChapterTitleRead
 void HomeActivity::onExit() {
   Activity::onExit();
 
+  quartzUi.reset();
   coverGridUi.reset();
   carouselMenuTouchDownIndex = -1;
   freeCoverBuffer();
@@ -1382,6 +1392,21 @@ void HomeActivity::loop() {
   }
 
   if (quickActionsPopup.handleInput(mappedInput, [this] { requestUpdate(); })) return;
+
+  if (quartzUi) {
+    bool redraw = false;
+    const int action = quartzUi->handleInput(mappedInput, redraw);
+    if (quartzUi->app.invalidated() || redraw) requestUpdate();
+    if (action >= 0) {
+      runQuartzAction(action);
+      return;
+    }
+    if (mappedInput.wasPressed(MappedInputManager::Button::Back)) backPressSeen = true;
+    if (mappedInput.wasReleased(MappedInputManager::Button::Back) && backPressSeen && !recentBooks.empty()) {
+      onSelectBook(recentBooks.front().path);
+    }
+    return;
+  }
 
   if (coverGridUi) {
     const int touched = coverGridUi->selectedAction(mappedInput);
@@ -2056,6 +2081,33 @@ void HomeActivity::render(RenderLock&&) {
     initialRefreshMode = HalDisplay::FAST_REFRESH;
   };
 
+  if (quartzUi) {
+    renderer.clearScreen();
+    quartzUi->render();
+    if (!BoardConfig::hasTouch()) {
+      const auto labels = mappedInput.mapLabels(recentBooks.empty() ? "" : tr(STR_READ), tr(STR_SELECT),
+                                                tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    }
+    displayHomeBuffer();
+
+    // Covers are drawn at the sizes the layout asks for; make any missing
+    // thumbnails after the first frame is on screen, then redraw.
+    if (quartzUi->takeThumbSizesChanged()) {
+      quartzUi->refreshCoverPaths();
+      recentsLoaded = false;
+    }
+    if (!firstRenderDone) {
+      firstRenderDone = true;
+      requestUpdate();
+    } else if (!recentsLoaded && !recentsLoading) {
+      loadCoverGridThumbnails();
+      quartzUi->refreshCoverPaths();
+      requestUpdate();
+    }
+    return;
+  }
+
   if (coverGridUi) {
     renderer.clearScreen();
     coverGridUi->setSelection(selectorIndex);
@@ -2309,6 +2361,50 @@ void HomeActivity::onMinimalBrowseOpen() {
     onLibraryOpen();
   } else {
     onFileBrowserOpen();
+  }
+}
+
+void HomeActivity::beginQuartzHome() {
+  QuartzHomeUi::CurrentBook current;
+  if (!recentBooks.empty()) {
+    current.shelf = QuartzHomeUi::shelfForPath(recentBooks.front().path);
+    current.progressPercent = currentBookProgressPercent;
+    if (SETTINGS.shouldTrackReadingStats()) {
+      current.readingSeconds = currentBookStats.totalReadingSeconds;
+      current.timeLeftSeconds = currentBookStats.estimatedTimeLeftSeconds;
+    }
+  }
+  quartzUi->begin(recentBooks, std::move(current), QuartzHomeUi::scanShelves());
+}
+
+void HomeActivity::runQuartzAction(const int action) {
+  if (action >= 0 && action < static_cast<int>(recentBooks.size())) {
+    onSelectBook(recentBooks[static_cast<size_t>(action)].path);
+    return;
+  }
+  switch (action) {
+    case QuartzHomeUi::ACTION_STATS:
+      onReadingStatsOpen();
+      return;
+    case QuartzHomeUi::ACTION_SETTINGS:
+      onSettingsOpen();
+      return;
+    case QuartzHomeUi::ACTION_FILES:
+      onFileBrowserOpen();
+      return;
+    case QuartzHomeUi::ACTION_LIBRARY:
+      onLibraryOpen();
+      return;
+    case QuartzHomeUi::ACTION_TRANSFER:
+      onFileTransferOpen();
+      return;
+    default:
+      break;
+  }
+  const auto shelves = QuartzHomeUi::scanShelves();
+  const int shelf = action - QuartzHomeUi::SHELF_BASE;
+  if (shelf >= 0 && shelf < static_cast<int>(shelves.size())) {
+    activityManager.goToFileBrowser(std::string(QuartzHomeUi::SHELF_ROOT) + "/" + shelves[static_cast<size_t>(shelf)]);
   }
 }
 

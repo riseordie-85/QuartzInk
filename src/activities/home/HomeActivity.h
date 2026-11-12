@@ -15,6 +15,7 @@
 #include "activities/reader/GlobalReadingStats.h"
 #include "components/CoverGridHomeUi.h"
 #include "components/OptionPopup.h"
+#include "components/QuartzHomeUi.h"
 #include "util/ButtonNavigator.h"
 
 struct RecentBook;
@@ -31,6 +32,7 @@ class HomeActivity final : public Activity {
  private:
   ButtonNavigator buttonNavigator;
   std::unique_ptr<CoverGridHomeUi> coverGridUi;
+  std::unique_ptr<QuartzHomeUi> quartzUi;  // QuartzInk Home; used in place of every other layout
   bool gridHasContinueReading = false;
   int selectorIndex = 0;
   int lastCarouselBookIndex = 0;  // remembered position when leaving carousel row
@@ -129,6 +131,8 @@ class HomeActivity final : public Activity {
   void updateHighlightedBookContext(bool allowChapterTitleRead = true);
   void loadRecentBooks(int maxBooks);
   void loadCoverGridThumbnails();
+  void beginQuartzHome();
+  void runQuartzAction(int action);
   void activateCoverGridSelection();
   void loadAllBookStats();
   void loadRecentCovers(int coverHeight);
