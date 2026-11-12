@@ -1,9 +1,11 @@
 #include "QuartzChrome.h"
 
 #include <FreeInkUIIcon.h>
+#include <HalClock.h>
 
 #include <algorithm>
 
+#include "CrossPointSettings.h"
 #include "UIThemeTokens.h"
 #include "components/TouchHeaderBackButton.h"
 #include "components/UiAppHelpers.h"
@@ -14,7 +16,10 @@ namespace fui = freeink::ui;
 
 namespace QuartzChrome {
 
-void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* title, const bool backArrow) {
+bool active() { return SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTZ; }
+
+void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* title, const bool backArrow,
+                  const char* rightLabel) {
   auto target = makeUiTarget(renderer);
   constexpr int16_t SIDE = 12;
   constexpr int16_t VERTICAL = 4;
@@ -36,13 +41,34 @@ void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* t
     titleX = static_cast<int16_t>(icon.right() + 8);
   }
 
-  fui::TextStyle style = uiThemeTokens(target).titleText;
+  const auto tokens = uiThemeTokens(target);
+  // Right side: the caller's label, or the clock like the Quartz Home bar.
+  char clock[16] = "";
+  const char* right = rightLabel;
+  if (right == nullptr && halClock.isAvailable() &&
+      halClock.formatTime(clock, sizeof(clock), SETTINGS.clockUtcOffsetQ, SETTINGS.clockFormat == 1)) {
+    right = clock;
+  }
+  int16_t rightW = 0;
+  if (right != nullptr && right[0] != '\0') {
+    fui::TextStyle rightStyle = tokens.bodyText;
+    rightStyle.align = fui::TextAlign::Right;
+    rightStyle.color = fui::Color::White;
+    rightStyle.maxLines = 1;
+    rightW = static_cast<int16_t>(
+        std::min<int>(bar.width / 2, target.measureText(rightStyle.font, right, rightStyle).width + 4));
+    target.text(fui::Rect{static_cast<int16_t>(bar.right() - 18 - rightW), bar.y, rightW, bar.height}, right,
+                rightStyle);
+  }
+
+  fui::TextStyle style = tokens.titleText;
   style.align = fui::TextAlign::Left;
   style.color = fui::Color::White;
   style.bold = true;
   style.maxLines = 1;
-  target.text(fui::Rect{titleX, bar.y, static_cast<int16_t>(std::max(0, bar.right() - 18 - titleX)), bar.height}, title,
-              style);
+  const int titleRight = bar.right() - 18 - (rightW > 0 ? rightW + 12 : 0);
+  target.text(fui::Rect{titleX, bar.y, static_cast<int16_t>(std::max(0, titleRight - titleX)), bar.height},
+              title != nullptr ? title : "", style);
 }
 
 int drawLogo(const GfxRenderer& renderer, const int y) {
@@ -76,6 +102,50 @@ fui::StyleSet rowStyles() {
   styles.disabled = styles.normal;
   styles.disabled.foreground = fui::Paint::dither(fui::Color::DarkGray);
   return styles;
+}
+
+void applyListStyle(fui::ListProps& props, const fui::ThemeTokens& tokens) {
+  if (props.rowStyles.explicitlySet) return;
+  props.rowStyles = rowStyles();
+  props.rowRadius = RADIUS;
+  if (props.rowGap < 0) props.rowGap = 6;
+  if (props.rowInset < 0) props.rowInset = 12;
+  props.separatorPaint = fui::Paint::none();
+  props.headerText = tokens.smallText;
+  props.headerText.bold = true;
+  props.headerUnderline = false;
+  props.toggleRadius = 9;
+  props.toggleKnobRadius = 6;
+  props.toggleBorderWidth = 2;
+}
+
+fui::Rect segmentRect(const fui::Rect rect, const int index, const int count) {
+  constexpr int16_t INNER = 4;
+  const int16_t segW = static_cast<int16_t>((rect.width - 2 * INNER) / std::max(1, count));
+  const int16_t x = static_cast<int16_t>(rect.x + INNER + index * segW);
+  const int16_t w = static_cast<int16_t>(index == count - 1 ? rect.right() - INNER - x : segW);
+  return fui::Rect{x, static_cast<int16_t>(rect.y + INNER), w, static_cast<int16_t>(rect.height - 2 * INNER)};
+}
+
+void paintSegmentTabs(fui::DrawTarget& target, const fui::Rect rect, const char* const* labels, const int count,
+                      const int selected, const bool focused, const fui::FontId font) {
+  if (count <= 0 || rect.width <= 0) return;
+  const fui::Paint black = fui::Paint::solid(fui::Color::Black);
+  target.fill(rect, fui::Paint::solid(fui::Color::White), RADIUS);
+  for (int i = 0; i < count; ++i) {
+    const fui::Rect seg = segmentRect(rect, i, count);
+    const bool isSelected = i == selected;
+    if (isSelected) target.fill(seg, black, static_cast<uint8_t>(RADIUS - 4));
+    fui::TextStyle style;
+    style.font = font;
+    style.align = fui::TextAlign::Center;
+    style.color = isSelected ? fui::Color::White : fui::Color::Black;
+    style.bold = isSelected;
+    style.maxLines = 1;
+    target.text(fui::Rect{static_cast<int16_t>(seg.x + 2), seg.y, static_cast<int16_t>(seg.width - 4), seg.height},
+                labels[i] != nullptr ? labels[i] : "", style);
+  }
+  target.stroke(rect, black, static_cast<uint8_t>(focused ? BORDER + 2 : BORDER), RADIUS);
 }
 
 }  // namespace QuartzChrome

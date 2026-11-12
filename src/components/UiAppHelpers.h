@@ -168,6 +168,25 @@ inline void drawUiTabBar(freeink::ui::Screen<MaxInteractions>& screen, freeink::
   namespace fui = freeink::ui;
   if (props.tabs == nullptr || props.count == 0) return;
   if (fui::textStyleUnset(props.text)) props.text = screen.theme().smallText;
+  if (QuartzChrome::active()) {
+    // QuartzInk: one outlined segment control, the selected tab filled black.
+    constexpr uint8_t MAX_SEGMENTS = 8;
+    const char* labels[MAX_SEGMENTS];
+    int16_t values[MAX_SEGMENTS];
+    const int count = std::min<int>(props.count, MAX_SEGMENTS);
+    int selected = -1;
+    for (int i = 0; i < count; ++i) {
+      labels[i] = props.tabs[i].label;
+      values[i] = props.tabs[i].value;
+      if (props.tabs[i].selected) selected = i;
+    }
+    fui::Rect bar = rect;
+    bar.x = static_cast<int16_t>(bar.x + 12);
+    bar.width = static_cast<int16_t>(bar.width - 24);
+    QuartzChrome::drawSegmentTabs(screen.frame(), screen.target(), bar, labels, count, selected, false, props.text.font,
+                                  props.action, values);
+    return;
+  }
   props.minTouchSize = screen.theme().minTouchSize;
 
   switch (appearance) {

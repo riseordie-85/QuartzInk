@@ -14,9 +14,14 @@ constexpr uint8_t RADIUS = 12;
 constexpr uint8_t BORDER = 2;
 constexpr int16_t ROW_GAP = 8;
 
+// True when the Quartz UI theme is selected; other themes keep their own look.
+bool active();
+
 // Black rounded bar across `header` with the title in white. `backArrow` adds a
 // white back chevron where TouchHeaderBackButton's tap target already sits.
-void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* title, bool backArrow);
+// `rightLabel` is drawn on the right; when null, the clock (if set) is.
+void drawTitleBar(const GfxRenderer& renderer, const Rect& header, const char* title, bool backArrow,
+                  const char* rightLabel = nullptr);
 
 // The QuartzInk gem logo and wordmark, centered horizontally with its top at `y`.
 // Returns the logo's height.
@@ -25,37 +30,29 @@ int drawLogo(const GfxRenderer& renderer, int y);
 // Outlined, rounded list rows; the selected row fills black with white text.
 freeink::ui::StyleSet rowStyles();
 
+// Applies the Quartz row look (outlined rounded rows with a gap, bold section
+// labels) to a FreeInkUI list that has not chosen its own row styles.
+void applyListStyle(freeink::ui::ListProps& props, const freeink::ui::ThemeTokens& tokens);
+
+// Segment rectangle `index` of `count` inside a segment control at `rect`.
+freeink::ui::Rect segmentRect(freeink::ui::Rect rect, int index, int count);
+
+// Draws the segment control without registering touch targets.
+void paintSegmentTabs(freeink::ui::DrawTarget& target, freeink::ui::Rect rect, const char* const* labels, int count,
+                      int selected, bool focused, freeink::ui::FontId font);
+
 // Outlined segment control; the selected segment fills black. `focused` thickens
 // the outline so button devices can see the tabs hold the focus. Each segment
 // registers `action` with its index as the value.
 template <typename FrameT>
 void drawSegmentTabs(FrameT& frame, freeink::ui::DrawTarget& target, const freeink::ui::Rect rect,
                      const char* const* labels, const int count, const int selected, const bool focused,
-                     const freeink::ui::FontId font, const freeink::ui::ActionId action) {
-  namespace fui = freeink::ui;
-  if (count <= 0 || rect.width <= 0) return;
-  const fui::Paint black = fui::Paint::solid(fui::Color::Black);
-  target.fill(rect, fui::Paint::solid(fui::Color::White), RADIUS);
-  const int16_t inner = 4;
-  const int16_t segW = static_cast<int16_t>((rect.width - 2 * inner) / count);
+                     const freeink::ui::FontId font, const freeink::ui::ActionId action,
+                     const int16_t* values = nullptr) {
+  paintSegmentTabs(target, rect, labels, count, selected, focused, font);
   for (int i = 0; i < count; ++i) {
-    const fui::Rect seg{
-        static_cast<int16_t>(rect.x + inner + i * segW), static_cast<int16_t>(rect.y + inner),
-        static_cast<int16_t>(i == count - 1 ? rect.right() - inner - (rect.x + inner + i * segW) : segW),
-        static_cast<int16_t>(rect.height - 2 * inner)};
-    const bool isSelected = i == selected;
-    if (isSelected) target.fill(seg, black, static_cast<uint8_t>(RADIUS - 4));
-    fui::TextStyle style;
-    style.font = font;
-    style.align = fui::TextAlign::Center;
-    style.color = isSelected ? fui::Color::White : fui::Color::Black;
-    style.bold = isSelected;
-    style.maxLines = 1;
-    target.text(fui::Rect{static_cast<int16_t>(seg.x + 2), seg.y, static_cast<int16_t>(seg.width - 4), seg.height},
-                labels[i], style);
-    frame.hit(seg, action, static_cast<int16_t>(i));
+    frame.hit(segmentRect(rect, i, count), action, values != nullptr ? values[i] : static_cast<int16_t>(i));
   }
-  target.stroke(rect, black, static_cast<uint8_t>(focused ? BORDER + 2 : BORDER), RADIUS);
 }
 
 }  // namespace QuartzChrome

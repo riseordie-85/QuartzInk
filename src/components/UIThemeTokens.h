@@ -12,6 +12,7 @@
 
 #include "AppCapabilities.h"
 #include "CrossPointSettings.h"
+#include "QuartzChrome.h"
 #include "UITheme.h"
 
 namespace UiThemeTokensDetail {
@@ -50,6 +51,8 @@ inline int16_t uiListRowHeight(const freeink::ui::ThemeTokens& tokens, const UiL
 
 inline uint16_t configureUiList(freeink::ui::ListProps& props, const freeink::ui::ThemeTokens& tokens,
                                 const freeink::ui::Rect rect, const UiListRowType rowType = UiListRowType::SingleLine) {
+  // QuartzInk: outlined rounded rows with a gap whenever the Quartz theme is on.
+  if (QuartzChrome::active()) QuartzChrome::applyListStyle(props, tokens);
   // Button-only menus used compact, single-line rows before their FreeInkUI
   // migration. Keep that layout unless the caller explicitly needs a subtitle.
 #if CROSSINK_APP_CAP_TOUCH

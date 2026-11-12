@@ -7,6 +7,7 @@
 #include <string>
 
 #include "HeaderDate.h"
+#include "QuartzChrome.h"
 #include "UITheme.h"
 #include "fontIds.h"
 
@@ -42,6 +43,10 @@ int contentTop(const ThemeMetrics& metrics) { return headerBottomY(metrics) + kH
 void drawTitle(const GfxRenderer& renderer, const char* title, const bool showDate) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const int pageWidth = renderer.getScreenWidth();
+  if (QuartzChrome::active()) {
+    QuartzChrome::drawTitleBar(renderer, Rect{0, metrics.topPadding, pageWidth, headerHeight(metrics)}, title, false);
+    return;
+  }
   GUI.drawHeader(renderer, Rect{0, metrics.topPadding, pageWidth, headerHeight(metrics)}, "");
 
   const int titleX = metrics.contentSidePadding;

@@ -7,6 +7,7 @@
 #include "UIThemeTokens.h"
 #include "components/CompactHeader.h"
 #include "components/HeaderDate.h"
+#include "components/QuartzChrome.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 #include "components/icons/touchHeaderIcons.h"
@@ -112,6 +113,10 @@ void drawCompact(GfxRenderer& renderer, const char* title, const bool readerCont
                  const int verticalOffset) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const Rect header = compactHeaderRect(renderer);
+  if (QuartzChrome::active() && !readerContext) {
+    QuartzChrome::drawTitleBar(renderer, header, title, true);
+    return;
+  }
   const int rightReserve =
       metrics.batteryWidth + 2 * metrics.headerSidePadding + (showDate ? headerDateReservedWidth(renderer) : 0);
   draw(renderer, header, title, readerContext, rightReserve, nullptr, verticalOffset);

@@ -23,6 +23,7 @@
 #include "components/themes/lyra/LyraCarouselTheme.h"
 #include "components/themes/lyra/LyraTheme.h"
 #include "components/themes/minimal/MinimalTheme.h"
+#include "components/themes/quartz/QuartzTheme.h"
 #include "components/themes/roundedraff/RoundedRaffTheme.h"
 
 namespace {
@@ -94,7 +95,11 @@ void UITheme::setTheme(CrossPointSettings::UI_THEME type) {
       currentTheme = std::make_unique<BaseTheme>();
       currentMetrics = &BaseMetrics::values;
       break;
-    case CrossPointSettings::UI_THEME::QUARTZ:  // Quartz draws its own Home; Lyra elsewhere
+    case CrossPointSettings::UI_THEME::QUARTZ:
+      LOG_DBG("UI", "Using Quartz theme");
+      currentTheme = std::make_unique<QuartzTheme>();
+      currentMetrics = &QuartzMetrics::values;
+      break;
     case CrossPointSettings::UI_THEME::COVER_GRID:
     case CrossPointSettings::UI_THEME::LYRA:
       LOG_DBG("UI", "Using Lyra theme");

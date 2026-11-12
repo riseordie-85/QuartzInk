@@ -1546,20 +1546,27 @@ void SettingsActivity::buildSettingsScreen(UiApp::ScreenType& screen) {
   } else
 #endif
   {
-    // QuartzInk: one outlined segment control, the current category filled black.
-    (void)roundedRaffTabs;
-    (void)borderedTabs;
-    screen.spacer(8);
-    const int16_t segmentBand = std::max<int16_t>(tabBand, static_cast<int16_t>(tabLineHeight + 22));
-    fui::Rect tabRect = screen.takeTop(segmentBand);
-    tabRect.x = static_cast<int16_t>(tabRect.x + 12);
-    tabRect.width = static_cast<int16_t>(tabRect.width - 24);
-    const char* tabLabels[categoryCount];
-    for (int i = 0; i < categoryCount; ++i) tabLabels[i] = tabs[i].label;
-    QuartzChrome::drawSegmentTabs(screen.frame(), screen.target(), tabRect, tabLabels, categoryCount,
-                                  selectedCategoryIndex, tabsFocused && !mappedInput.hasTouch(),
-                                  screen.theme().smallText.font, ACTION_TAB);
-    screen.spacer(12);
+    if (QuartzChrome::active()) {
+      // QuartzInk: one outlined segment control, the current category filled black.
+      screen.spacer(8);
+      const int16_t segmentBand = std::max<int16_t>(tabBand, static_cast<int16_t>(tabLineHeight + 22));
+      fui::Rect tabRect = screen.takeTop(segmentBand);
+      tabRect.x = static_cast<int16_t>(tabRect.x + 12);
+      tabRect.width = static_cast<int16_t>(tabRect.width - 24);
+      const char* tabLabels[categoryCount];
+      for (int i = 0; i < categoryCount; ++i) tabLabels[i] = tabs[i].label;
+      QuartzChrome::drawSegmentTabs(screen.frame(), screen.target(), tabRect, tabLabels, categoryCount,
+                                    selectedCategoryIndex, tabsFocused && !mappedInput.hasTouch(),
+                                    screen.theme().smallText.font, ACTION_TAB);
+      screen.spacer(12);
+    } else {
+      const fui::Rect tabRect = screen.takeTop(tabBand);
+      if (!roundedRaffTabs && !borderedTabs && tabsFocused) {
+        screen.target().fill(tabRect, fui::Paint::dither(fui::Color::LightGray));
+      }
+      drawUiTabBar(screen, tabProps, tabRect, metrics.tabBarAppearance);
+      screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+    }
   }
 
   const StrId submenuTitle = activeSubmenuTitleId();
@@ -1623,18 +1630,7 @@ void SettingsActivity::buildSettingsScreen(UiApp::ScreenType& screen) {
     props.headerText.bold = true;
   }
   configureUiListSectionHeaders(props, screen.theme());
-  // QuartzInk rows: outlined rounded cards with a gap, black when selected.
-  props.rowStyles = QuartzChrome::rowStyles();
-  props.rowRadius = QuartzChrome::RADIUS;
-  props.rowGap = QuartzChrome::ROW_GAP;
-  props.rowInset = 12;
-  props.separatorPaint = fui::Paint::none();
-  props.headerText = screen.theme().smallText;
-  props.headerText.bold = true;
-  props.headerUnderline = false;
-  props.toggleRadius = 9;
-  props.toggleKnobRadius = 6;
-  props.toggleBorderWidth = 2;
+  if (QuartzChrome::active()) props.rowGap = QuartzChrome::ROW_GAP;  // configureUiList adds the Quartz rows
   const auto rows = configureUiList(props, screen.theme(), screen.body());
   visibleRows = rows > 0 ? rows : 1;
   topIndex = scrollListBy(topIndex, 0, visibleRows, settingsCount);  // clamp to range
@@ -1651,7 +1647,13 @@ void SettingsActivity::render(RenderLock&&) {
   const auto& metrics = UITheme::getInstance().getMetrics();
   const char* title = isFileBrowserView() ? tr(STR_FILE_BROWSER_SETTINGS) : tr(STR_SETTINGS_TITLE);
 
-  QuartzChrome::drawTitleBar(renderer, settingsHeaderRect(metrics, pageWidth), title, mappedInput.hasTouchHardware());
+  if (QuartzChrome::active()) {
+    QuartzChrome::drawTitleBar(renderer, settingsHeaderRect(metrics, pageWidth), title, mappedInput.hasTouchHardware());
+  } else if (mappedInput.hasTouchHardware()) {
+    TouchHeaderBackButton::drawCompact(renderer, title, false, false);
+  } else {
+    CompactHeader::drawTitle(renderer, title);
+  }
 
   uiReady = false;
   app.render();
