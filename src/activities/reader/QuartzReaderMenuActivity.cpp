@@ -475,12 +475,24 @@ void QuartzReaderMenuActivity::buildScreen(UiApp::ScreenType& screen) {
                        static_cast<int16_t>(height - 2 * EDGE - hintsHeight)};
   const int16_t topBottom = drawTopBar(screen, area);
 
-  if (sheetOpen) {
+  if (!sheetOpen) {
+    // The bottom of the screen is the board's edge-gesture band (swipe up for
+    // Home/menu): drags that start there are taken as gestures and never reach
+    // the scrubber. Keep the timeline card just above it.
+    int16_t timelineBottom = area.bottom();
+    if (!buttonDevice) {
+      while (timelineBottom > height / 2 && mappedInput.isInVerticalEdgeGestureZone(timelineBottom)) {
+        timelineBottom = static_cast<int16_t>(timelineBottom - 4);
+      }
+      timelineBottom = static_cast<int16_t>(timelineBottom - 8);
+    }
+    drawTimeline(screen, fui::Rect{area.x, area.y, area.width, static_cast<int16_t>(timelineBottom - area.y)});
+    return;
+  }
+  {
     const fui::Rect sheet{area.x, static_cast<int16_t>(topBottom + 10), area.width,
                           static_cast<int16_t>(area.bottom() - topBottom - 10)};
     drawSheet(screen, sheet);
-  } else {
-    drawTimeline(screen, area);
   }
 }
 
