@@ -21,6 +21,7 @@
 
 ### Fixed
 
+- Page Overlay sleep screens no longer turn the page's text into replacement symbols when reading in an SD-card font: the sleep-page redraw now prepares the page's glyphs first, as the reader does.
 - Moving a book with File Transfer's Move button keeps its reading progress, reading stats, bookmarks and clippings, the same as Rename; it used to clear them. The Move dialog also suggests folders one level down, such as `/Books/Adventure`.
 - The current book's title on Home wraps to a second line instead of cutting off.
 

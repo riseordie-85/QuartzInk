@@ -8418,6 +8418,32 @@ bool EpubReaderActivity::drawCurrentPageToBuffer(const std::string& filePath, Gf
     page->prepareImageCaches();
     ImageBlock::setExtractor(nullptr, nullptr, nullptr);
   }
+  // SD-card fonts only draw glyphs prepared for the page, so scan and prewarm
+  // the page text first, as the reader does. Without it every glyph on the
+  // sleep page renders as the replacement symbol.
+  std::optional<FontCacheManager::PrewarmScope> pageRenderScope;
+  if (auto* fcm = renderer.getFontCacheManager()) {
+    const auto prewarmVisibleText = [&]() {
+      pageRenderScope.emplace(*fcm, FontCacheManager::PreparationPolicy::Normal);
+      page->renderText(renderer, renderFontId, layout.marginLeft, layout.marginTop);  // scan pass
+      if (!pageRenderScope->endScanAndPrewarm()) {
+        pageRenderScope.reset();
+        return false;
+      }
+      return true;
+    };
+    bool prewarmed = prewarmVisibleText();
+    if (!prewarmed && renderer.isSdCardFont(renderFontId)) {
+      renderer.releaseSdCardFontForLowMemory(renderFontId, /*preserveAdvanceTable=*/true);
+      prewarmed = prewarmVisibleText();
+    }
+    if (!prewarmed) {
+      LOG_ERR("SLP", "EPUB: sleep-page font prewarm failed (font=%d free=%u maxAlloc=%u)", renderFontId,
+              ESP.getFreeHeap(), ESP.getMaxAllocHeap());
+      return false;
+    }
+  }
+
   renderer.clearScreen(ReaderUtils::readerBackgroundColor());
   page->render(renderer, renderFontId, layout.marginLeft, layout.marginTop, ReaderUtils::readerForegroundBlack());
   drawPublisherPageMarkers(renderer, *page, layout.marginTop, renderer.getScreenHeight() - layout.marginBottom,
