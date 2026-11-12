@@ -102,6 +102,26 @@ function formatSize(bytes) {
       return Array.from(fileList).filter(f => (/\.cpfont$/i.test(f.name) || (ttfSupported && /\.ttf$/i.test(f.name))));
     }
 
+    // QuartzInk: a picked folder may hold one family's files, or a folder per
+    // family (e.g. fonts/NV Charis/...). Files two or more folders deep take
+    // their family from the folder they sit in; otherwise from the filename.
+    function familyForFile(file) {
+      const parts = (file.webkitRelativePath || '').split('/');
+      parts.pop();
+      if (parts.length >= 2) return sanitizeFamily(parts[parts.length - 1]);
+      return sanitizeFamily(familyFromFilename(file.name));
+    }
+
+    function groupByFamily(files) {
+      const groups = new Map();
+      for (const file of files) {
+        const family = familyForFile(file);
+        if (!groups.has(family)) groups.set(family, []);
+        groups.get(family).push(file);
+      }
+      return groups;
+    }
+
     document.getElementById('fontFiles').addEventListener('change', function() {
       const info = document.getElementById('pickedInfo');
       const files = cpfontFilesOnly(this.files);
@@ -109,9 +129,10 @@ function formatSize(bytes) {
         info.textContent = 'No .cpfont or .ttf files found in the selected folder.';
         return;
       }
-      const family = sanitizeFamily(familyFromFilename(files[0].name));
-      info.textContent = files.length + ' file' + (files.length === 1 ? '' : 's') +
-        ' → family "' + family + '"';
+      const families = [...groupByFamily(files).keys()];
+      info.textContent = files.length + ' file' + (files.length === 1 ? '' : 's') + ' → ' +
+        (families.length === 1 ? 'family "' + families[0] + '"'
+                               : families.length + ' families: ' + families.join(', '));
     });
 
     document.getElementById('uploadForm').addEventListener('submit', async function(e) {
@@ -125,48 +146,43 @@ function formatSize(bytes) {
         return;
       }
 
-      // A directory picker may include files from multiple family subfolders.
-      // Reject that up front — otherwise files[0]'s family is silently reused
-      // for every upload, corrupting the install layout.
-      const families = [...new Set(files.map(f => sanitizeFamily(familyFromFilename(f.name))))];
-      if (families.length !== 1) {
-        status.className = 'status-err';
-        status.style.display = 'block';
-        status.textContent = 'Please select files from a single font family.';
-        return;
-      }
-      const family = families[0];
-
+      const groups = groupByFamily(files);
       status.className = '';
       status.style.display = 'block';
 
       let uploaded = 0;
-      for (const file of files) {
-        status.textContent = 'Uploading ' + (uploaded + 1) + '/' + files.length + ': ' + file.name;
-        const formData = new FormData();
-        formData.append('family', family);
-        formData.append('file', file, file.name);
-        try {
-          const res = await fetch('/api/fonts/upload', { method: 'POST', body: formData });
-          const data = await res.json();
-          if (!data.ok) {
-            status.className = 'status-err';
-            status.textContent = 'Failed on ' + file.name + ': ' + (data.error || 'unknown error');
-            await loadFonts();
-            return;
+      const failed = [];
+      for (const [family, familyFiles] of groups) {
+        for (const file of familyFiles) {
+          status.textContent = 'Uploading ' + (uploaded + failed.length + 1) + '/' + files.length + ': ' +
+            family + ' / ' + file.name;
+          const formData = new FormData();
+          formData.append('family', family);
+          formData.append('file', file, file.name);
+          try {
+            const res = await fetch('/api/fonts/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (!data.ok) {
+              failed.push(family + ' / ' + file.name + ' (' + (data.error || 'unknown error') + ')');
+              continue;
+            }
+          } catch (err) {
+            failed.push(family + ' / ' + file.name + ' (' + err.message + ')');
+            continue;
           }
-        } catch (err) {
-          status.className = 'status-err';
-          status.textContent = 'Upload error on ' + file.name + ': ' + err.message;
-          await loadFonts();
-          return;
+          uploaded++;
         }
-        uploaded++;
       }
 
-      status.className = 'status-ok';
-      status.textContent = 'Uploaded ' + uploaded + ' file' + (uploaded === 1 ? '' : 's') +
-        ' to family "' + family + '".';
+      const familyText = groups.size === 1 ? 'family "' + [...groups.keys()][0] + '"' : groups.size + ' families';
+      if (failed.length === 0) {
+        status.className = 'status-ok';
+        status.textContent = 'Uploaded ' + uploaded + ' file' + (uploaded === 1 ? '' : 's') + ' to ' + familyText + '.';
+      } else {
+        status.className = 'status-err';
+        status.textContent = 'Uploaded ' + uploaded + ' of ' + files.length + ' files to ' + familyText +
+          '. Failed: ' + failed.join('; ');
+      }
       await loadFonts();
     });
 

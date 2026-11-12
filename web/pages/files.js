@@ -3,7 +3,7 @@ const currentPath = decodeURIComponent(new URLSearchParams(window.location.searc
 
 if (currentPath !== "/") {
   const leaf = currentPath.split("/").filter(Boolean).pop();
-  if (leaf) document.title = leaf + " - Files - CrossInk Reader";
+  if (leaf) document.title = leaf + " - Files - QuartzInk";
 }
 
 // Network status monitoring
@@ -445,6 +445,7 @@ function closeUploadModal() {
     return;
   }
   document.getElementById("uploadModal").classList.remove("open");
+  clearFolderSelection();
   const fileInput = document.getElementById("fileInput");
   fileInput.value = "";
   fileInput.classList.remove("has-files");
@@ -537,8 +538,7 @@ function toggleAdvancedOptions() {
 
   // When expanding, show image picker if an EPUB is selected
   if (isExpanding) {
-    const fileInput = document.getElementById("fileInput");
-    const files = fileInput.files;
+    const files = selectedUploadFiles();
     if (files.length === 1 && files[0].name.toLowerCase().endsWith(".epub")) {
       showImagePicker(files[0]).catch((err) => console.error("Image picker error:", err));
     }
@@ -1462,6 +1462,19 @@ function clearImagePicker() {
       const dropped = e.dataTransfer && e.dataTransfer.files;
       if (!dropped || dropped.length === 0) return;
 
+      // A dropped folder uploads with its subfolders.
+      const entries = Array.from(e.dataTransfer.items || [])
+        .map((item) => (item.webkitGetAsEntry ? item.webkitGetAsEntry() : null))
+        .filter(Boolean);
+      if (entries.some((entry) => entry.isDirectory)) {
+        const collected = [];
+        Promise.all(entries.map((entry) => collectDroppedEntries(entry, "", collected)))
+          .then(() => setFolderSelection(collected))
+          .catch((err) => alert(`Could not read the dropped folder: ${err.message || err}`));
+        return;
+      }
+      clearFolderSelection();
+
       // Replace the current selection, matching native file-picker semantics.
       const dt = new DataTransfer();
       for (const file of dropped) dt.items.add(file);
@@ -1472,10 +1485,117 @@ function clearImagePicker() {
   }
 })();
 
+// ---------------------------------------------------------------------------
+// QuartzInk: folder uploads. A chosen or dropped folder uploads with its
+// subfolders, recreated under the current folder (e.g. Books/Fantasy/x.epub).
+
+// Files picked as a folder; when empty, the plain file input is the selection.
+let folderSelection = [];
+// Relative folder for files found by walking a dropped folder (they have no
+// webkitRelativePath of their own).
+const droppedFolderPaths = new WeakMap();
+const UPLOAD_SKIP_NAMES = new Set([".ds_store", "thumbs.db", "desktop.ini"]);
+
+function uploadRelativeDir(file) {
+  if (droppedFolderPaths.has(file)) return droppedFolderPaths.get(file);
+  const rel = file.webkitRelativePath || "";
+  const slash = rel.lastIndexOf("/");
+  return slash > 0 ? rel.substring(0, slash) : "";
+}
+
+function joinUploadPath(base, rel) {
+  if (!rel) return base;
+  return (base.endsWith("/") ? base : base + "/") + rel;
+}
+
+function selectedUploadFiles() {
+  if (folderSelection.length > 0) return folderSelection;
+  return Array.from(document.getElementById("fileInput").files);
+}
+
+function updateFolderHint() {
+  const hint = document.querySelector("#dropZone .drop-zone-hint");
+  if (!hint) return;
+  if (!hint.dataset.defaultText) hint.dataset.defaultText = hint.textContent;
+  if (folderSelection.length === 0) {
+    hint.textContent = hint.dataset.defaultText;
+    return;
+  }
+  const roots = new Set(folderSelection.map((f) => uploadRelativeDir(f).split("/")[0]).filter(Boolean));
+  const label = roots.size === 1 ? [...roots][0] : `${roots.size} folders`;
+  hint.textContent = `📁 ${label} — ${folderSelection.length} file${folderSelection.length === 1 ? "" : "s"}, subfolders included`;
+}
+
+function clearFolderSelection() {
+  folderSelection = [];
+  updateFolderHint();
+}
+
+function setFolderSelection(files) {
+  folderSelection = files.filter(
+    (f) =>
+      !f.name.startsWith(".") &&
+      !UPLOAD_SKIP_NAMES.has(f.name.toLowerCase()) &&
+      !uploadRelativeDir(f)
+        .split("/")
+        .some((segment) => segment.startsWith(".")),
+  );
+  document.getElementById("fileInput").value = "";
+  updateFolderHint();
+  validateFile();
+}
+
+function onFolderInputChange(input) {
+  setFolderSelection(Array.from(input.files));
+  input.value = "";
+}
+
+// Walks a dropped folder entry, recording each file's folder relative to the drop.
+async function collectDroppedEntries(entry, parentDir, out) {
+  if (entry.isFile) {
+    const file = await new Promise((resolve, reject) => entry.file(resolve, reject));
+    droppedFolderPaths.set(file, parentDir);
+    out.push(file);
+    return;
+  }
+  if (!entry.isDirectory || entry.name.startsWith(".")) return;
+  const dir = parentDir ? `${parentDir}/${entry.name}` : entry.name;
+  const reader = entry.createReader();
+  // readEntries returns results in batches; keep reading until it is empty.
+  for (;;) {
+    const batch = await new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+    if (batch.length === 0) break;
+    for (const child of batch) await collectDroppedEntries(child, dir, out);
+  }
+}
+
+// Folders already created (or known to exist) during this upload.
+const ensuredUploadFolders = new Set();
+
+async function ensureUploadFolder(basePath, relDir) {
+  if (!relDir) return;
+  let parent = basePath;
+  for (const segment of relDir.split("/")) {
+    const path = joinUploadPath(parent, segment);
+    if (!ensuredUploadFolders.has(path)) {
+      const formData = new FormData();
+      formData.append("name", segment);
+      formData.append("path", parent);
+      const response = await fetch("/mkdir", { method: "POST", body: formData });
+      if (!response.ok) {
+        const text = await response.text();
+        if (!/already exists/i.test(text)) throw new Error(`Could not create folder ${path}: ${text}`);
+      }
+      ensuredUploadFolders.add(path);
+    }
+    parent = path;
+  }
+}
+
 function validateFile() {
   const fileInput = document.getElementById("fileInput");
   const uploadBtn = document.getElementById("uploadBtn");
-  const files = fileInput.files;
+  const files = selectedUploadFiles();
   const convertOptions = document.getElementById("convertOptions");
   fileInput.classList.toggle("has-files", files.length > 0);
 
@@ -2086,7 +2206,7 @@ function exportLogToFile(filename = null, isBatch = false) {
   }
   // Extract text from log entries
   const entries = logContainer.querySelectorAll(".log-entry");
-  let logText = `CrossInk Reader ${crosspointVersion} - EPUB Conversion Log\n`;
+  let logText = `QuartzInk ${crosspointVersion} - EPUB Conversion Log\n`;
   logText += `Generated: ${new Date().toLocaleString()}\n`;
   logText += `${"=".repeat(60)}\n\n`;
 
@@ -2383,8 +2503,10 @@ function reserveAvailableUploadFilename(fileName, usedFileNames) {
   return candidateName;
 }
 
-async function fetchExistingUploadNames() {
-  const response = await fetch(`/api/files?path=${encodeURIComponent(currentPath)}&_=${Date.now()}`);
+async function fetchExistingUploadNames(path = currentPath) {
+  const response = await fetch(`/api/files?path=${encodeURIComponent(path)}&_=${Date.now()}`);
+  // A folder this upload is about to create has nothing in it yet.
+  if (response.status === 404) return new Set();
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
   const entries = await response.json();
   return new Set(entries.map((entry) => entry.name.toLowerCase()));
@@ -5059,7 +5181,7 @@ function getWsUrl() {
 }
 
 // Upload file via WebSocket (faster, binary protocol)
-function uploadFileWebSocket(file, onProgress, onComplete, onError) {
+function uploadFileWebSocket(file, onProgress, onComplete, onError, targetPath = currentPath) {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(getWsUrl());
     currentUploadWs = ws;
@@ -5072,7 +5194,7 @@ function uploadFileWebSocket(file, onProgress, onComplete, onError) {
     ws.onopen = function () {
       console.log("[WS] Connected, starting upload:", file.name);
       // Send start message: START:<filename>:<size>:<path>
-      ws.send(`START:${file.name}:${file.size}:${currentPath}`);
+      ws.send(`START:${file.name}:${file.size}:${targetPath}`);
     };
 
     ws.onmessage = async function (event) {
@@ -5168,14 +5290,14 @@ function uploadFileWebSocket(file, onProgress, onComplete, onError) {
 }
 
 // Upload file via HTTP (fallback method)
-function uploadFileHTTP(file, onProgress, onComplete, onError) {
+function uploadFileHTTP(file, onProgress, onComplete, onError, targetPath = currentPath) {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("file", file);
 
     const xhr = new XMLHttpRequest();
     currentUploadXhr = xhr;
-    xhr.open("POST", "/upload?path=" + encodeURIComponent(currentPath), true);
+    xhr.open("POST", "/upload?path=" + encodeURIComponent(targetPath), true);
 
     xhr.upload.onprogress = function (e) {
       if (e.lengthComputable && onProgress) {
@@ -5215,7 +5337,7 @@ async function uploadFile() {
   if (isUploadInProgress) return;
 
   const fileInput = document.getElementById("fileInput");
-  const files = Array.from(fileInput.files);
+  const files = selectedUploadFiles();
   const convertEnabled = document.getElementById("convertBeforeUpload").checked;
 
   if (files.length === 0) {
@@ -5224,9 +5346,15 @@ async function uploadFile() {
   }
 
   isUploadInProgress = true;
-  let usedFileNames;
+  ensuredUploadFolders.clear();
+  // Existing names per destination folder, so collisions are renamed in each.
+  const usedNamesByFolder = new Map();
+  const usedNamesFor = async (path) => {
+    if (!usedNamesByFolder.has(path)) usedNamesByFolder.set(path, await fetchExistingUploadNames(path));
+    return usedNamesByFolder.get(path);
+  };
   try {
-    usedFileNames = await fetchExistingUploadNames();
+    await usedNamesFor(currentPath);
   } catch (error) {
     isUploadInProgress = false;
     alert(`Failed to check existing files: ${error.message}`);
@@ -5309,6 +5437,8 @@ async function uploadFile() {
 
     let file = files[currentIndex];
     const originalFile = file;
+    const relDir = uploadRelativeDir(originalFile);
+    const targetPath = joinUploadPath(currentPath, relDir);
     // Reset progress bar instantly without transition when starting a new file
     progressFill.classList.add("no-transition");
     progressFill.style.width = "0%";
@@ -5332,6 +5462,15 @@ async function uploadFile() {
       if (file.name !== originalName) console.log(`[Upload] Renamed from metadata: ${originalName} -> ${file.name}`);
     }
 
+    let usedFileNames;
+    try {
+      await ensureUploadFolder(currentPath, relDir);
+      usedFileNames = await usedNamesFor(targetPath);
+    } catch (error) {
+      failedFiles.push({ name: relDir ? `${relDir}/${file.name}` : file.name, error: error.message, file: originalFile });
+      currentIndex++;
+      return uploadNextFile();
+    }
     const availableName = reserveAvailableUploadFilename(file.name, usedFileNames);
     if (availableName !== file.name) {
       console.log(`[Upload] Renamed to avoid collision: ${file.name} -> ${availableName}`);
@@ -5465,9 +5604,9 @@ async function uploadFile() {
       }
 
       if (useWebSocket) {
-        await uploadFileWebSocket(file, onProgress, null, null);
+        await uploadFileWebSocket(file, onProgress, null, null, targetPath);
       } else {
-        await uploadFileHTTP(file, onProgress, null, null);
+        await uploadFileHTTP(file, onProgress, null, null, targetPath);
       }
       // Ensure progress bar shows 100% before moving to next file
       progressFill.style.width = "100%";
@@ -5490,7 +5629,7 @@ async function uploadFile() {
         useWebSocket = false;
         // Retry this file with HTTP
         try {
-          await uploadFileHTTP(file, onProgress, null, null);
+          await uploadFileHTTP(file, onProgress, null, null, targetPath);
           onComplete();
         } catch (httpError) {
           onError(httpError.message);
@@ -5544,6 +5683,7 @@ function retrySingleUpload(index) {
   const dt = new DataTransfer();
   dt.items.add(failedFile.file);
 
+  clearFolderSelection();
   const fileInput = document.getElementById("fileInput");
   fileInput.files = dt.files;
 

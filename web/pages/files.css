@@ -1522,3 +1522,20 @@ h2 {
       width: auto;
       cursor: pointer;
     }
+
+/* QuartzInk: folder upload button under the drop zone */
+.folder-pick-btn {
+  display: block;
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border-color, #bbb);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.folder-pick-btn:hover {
+  border-style: solid;
+}

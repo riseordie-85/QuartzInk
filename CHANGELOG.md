@@ -10,6 +10,7 @@
 ### Changed
 
 - The built-in reading fonts are **NV Jost** (sans, the default) and **Libron** (serif), replacing Lexend Deca and Bitter on both devices. Books re-lay out once the first time they open in the new font.
+- The File Transfer web pages say QuartzInk, with the gem logo. **Files** can upload a whole folder with its subfolders (button or drag and drop), recreating them under the current folder. **Fonts** accepts a folder of family folders and installs each family at once.
 - **Quartz** is a new UI Theme, and the default. It gives the Quartz Home layout below; picking another theme brings back that theme's Home. Quartz Home: a clock bar with Reading Stats and Settings, the current book with its shelf, completion, time taken and time left, the next three recent books, the shelf buttons, and Browse Files, Library and File Transfer along the bottom. On button devices the selected item turns black with white text.
 - The boot screen and the Dark/Light sleep screens show the QuartzInk gem logo and wordmark; the boot screen credits CrossPoint/CrossInk along the bottom. Regenerate the logo with `scripts/generate_quartz_logo.py` from `assets/quartzink/boot.jpg`.
 - **Cover + Overlay** sleep screen: while reading, the book's cover with your PNG overlay (a pinned PNG, or one from the sleep folder) on top; with no PNG, the plain cover; outside a book, the Custom image. Cover + Custom works as it always has. Custom draws a pinned PNG on white, and pinning a PNG no longer switches Custom, Cover + Custom or Cover + Overlay to Page Overlay.
