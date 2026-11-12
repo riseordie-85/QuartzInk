@@ -271,13 +271,13 @@ void QuartzReaderMenuActivity::stepOption(const Row row, const bool forward) {
 // ---------------------------------------------------------------------------
 // Toolbar
 
-uint8_t QuartzReaderMenuActivity::toolCount() const { return book.hasDictionary ? 5 : 4; }
+uint8_t QuartzReaderMenuActivity::toolCount() const { return 4; }
 
 QuartzReaderMenuActivity::Tool QuartzReaderMenuActivity::toolAt(const uint8_t index) const {
-  static constexpr Tool WITH_LOOKUP[] = {Tool::Home, Tool::Contents, Tool::Bookmark, Tool::Lookup, Tool::PageSettings};
-  static constexpr Tool WITHOUT_LOOKUP[] = {Tool::Home, Tool::Contents, Tool::Bookmark, Tool::PageSettings};
-  if (book.hasDictionary) return WITH_LOOKUP[std::min<uint8_t>(index, 4)];
-  return WITHOUT_LOOKUP[std::min<uint8_t>(index, 3)];
+  // Look up sits where Home was: Home stays on the X4 Pro's Home key and swipe,
+  // and on Back from the reader.
+  static constexpr Tool TOOLS[] = {Tool::Lookup, Tool::Contents, Tool::Bookmark, Tool::PageSettings};
+  return TOOLS[std::min<uint8_t>(index, 3)];
 }
 
 void QuartzReaderMenuActivity::activateTool(const Tool tool) {
@@ -292,7 +292,10 @@ void QuartzReaderMenuActivity::activateTool(const Tool tool) {
       closeMenu(false, static_cast<int>(EpubReaderMenuAction::BOOKMARK_TOGGLE));
       return;
     case Tool::Lookup:
-      closeMenu(false, static_cast<int>(EpubReaderMenuAction::LOOKUP));
+      // Without a dictionary for this book, Look up opens the dictionary picker
+      // so there is always something to choose instead of a dead button.
+      closeMenu(false, static_cast<int>(book.hasDictionary ? EpubReaderMenuAction::LOOKUP
+                                                           : EpubReaderMenuAction::SET_BOOK_DICTIONARY));
       return;
     case Tool::PageSettings:
       if (sheetOpen) {
