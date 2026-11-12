@@ -78,7 +78,10 @@ class QuartzReaderMenuActivity final : public Activity {
   bool sheetOpen = false;
   // Timeline scrubbing: the thumb follows the finger (0-1000) and the book jumps
   // there on release. -1 when not scrubbing.
-  int16_t seekPermille = -1;
+  int16_t seekPermille = -1;         // where the thumb is drawn
+  int16_t pendingSeekPermille = -1;  // latest finger position, drawn or not
+  unsigned long lastSeekRenderMs = 0;
+  static constexpr unsigned long SEEK_RENDER_INTERVAL_MS = 250;
   bool touchReleasing = false;
   bool buttonDevice = false;
   Row focusRow = Row::Size;

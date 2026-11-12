@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <utility>
 
@@ -373,9 +374,20 @@ void QuartzReaderMenuActivity::onSeek(const fui::ActionEvent& event, void* user)
                     static_cast<int16_t>(std::clamp<int>(event.dragPermille, 0, 1000) * 10));
     return;
   }
-  if (event.dragPermille != self->seekPermille) {
+  self->pendingSeekPermille = event.dragPermille;
+  // Each repaint is an e-ink refresh. Redraw the thumb only for a visible move
+  // (about 1% of the book) and at most a few times a second, so the panel keeps
+  // up with the finger instead of queueing refreshes behind it.
+  const unsigned long now = millis();
+  const bool firstMove = self->seekPermille < 0;
+  if (firstMove || (std::abs(event.dragPermille - self->seekPermille) >= 10 &&
+                    now - self->lastSeekRenderMs >= SEEK_RENDER_INTERVAL_MS)) {
     self->seekPermille = event.dragPermille;
+    self->lastSeekRenderMs = now;
     self->requestUpdate();
+  } else {
+    // Keep the latest position for the jump even when the thumb is not redrawn.
+    self->pendingSeekPermille = event.dragPermille;
   }
 }
 
@@ -386,6 +398,10 @@ void QuartzReaderMenuActivity::loop() {
     // scrubber, which binds on the first held frame; the press edge is dropped
     // so a touch does not trigger an extra e-ink refresh for a pressed state.
     snap.touchPressed = false;
+    // A horizontal drag is also classified as a swipe partway through, and the
+    // snapshot reports that as a release. While the finger is still down it is
+    // not one: ignoring it keeps the scrubber from jumping mid-drag.
+    if (snap.touchHeld) snap.touchReleased = false;
     const bool scrubbing = !sheetOpen && snap.touchHeld;
     if (snap.touchReleased || scrubbing) {
       touchReleasing = snap.touchReleased;
@@ -394,9 +410,10 @@ void QuartzReaderMenuActivity::loop() {
       if (app.invalidated()) requestUpdate();
       if (event) return;
       if (snap.touchReleased && seekPermille >= 0) {
-        // Finger lifted just off the track: still jump to where the thumb is.
+        // Finger lifted without a routed release: jump to the last position.
+        const int16_t target = pendingSeekPermille >= 0 ? pendingSeekPermille : seekPermille;
         closeMenu(false, static_cast<int>(EpubReaderMenuAction::GO_TO_PERCENT),
-                  static_cast<int16_t>(seekPermille * 10));
+                  static_cast<int16_t>(std::clamp<int>(target, 0, 1000) * 10));
         return;
       }
     }
@@ -476,17 +493,7 @@ void QuartzReaderMenuActivity::buildScreen(UiApp::ScreenType& screen) {
   const int16_t topBottom = drawTopBar(screen, area);
 
   if (!sheetOpen) {
-    // The bottom of the screen is the board's edge-gesture band (swipe up for
-    // Home/menu): drags that start there are taken as gestures and never reach
-    // the scrubber. Keep the timeline card just above it.
-    int16_t timelineBottom = area.bottom();
-    if (!buttonDevice) {
-      while (timelineBottom > height / 2 && mappedInput.isInVerticalEdgeGestureZone(timelineBottom)) {
-        timelineBottom = static_cast<int16_t>(timelineBottom - 4);
-      }
-      timelineBottom = static_cast<int16_t>(timelineBottom - 8);
-    }
-    drawTimeline(screen, fui::Rect{area.x, area.y, area.width, static_cast<int16_t>(timelineBottom - area.y)});
+    drawTimeline(screen, area);
     return;
   }
   {
