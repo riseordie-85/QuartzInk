@@ -2,6 +2,7 @@
 #include <BoardConfig.h>
 #include <FreeInkUIGfxRenderer.h>
 
+#include "QuartzChrome.h"
 #include "UITheme.h"
 
 // Merges the active UITheme's shape (row gaps, radii, insets, selection
@@ -43,5 +44,7 @@ inline freeink::ui::ThemeTokens uiThemeTokens(const freeink::ui::GfxRendererTarg
   tokens.sheetRadius = static_cast<uint8_t>(metrics.sheetRadius);
   tokens.capsuleRadius = static_cast<uint8_t>(metrics.capsuleRadius);
   tokens.bodyText.bold = metrics.listTitleBold;
+  // Quartz: outlined rows that fill black when selected.
+  if (QuartzChrome::active()) tokens.listRow = QuartzChrome::rowStyles();
   return tokens;
 }

@@ -1,16 +1,15 @@
 #include "ReadingStatsActivity.h"
 
 #include <GfxRenderer.h>
-#include <HalClock.h>
-#include <HalPowerManager.h>
+#include <HalGPIO.h>
 #include <I18n.h>
 
 #include <algorithm>
 #include <cstdio>
 
-#include "CrossPointSettings.h"
 #include "MappedInputManager.h"
 #include "activities/ActivityManager.h"
+#include "components/QuartzChrome.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "stats/DailyReadingLog.h"
@@ -22,7 +21,7 @@ constexpr int GAP = 10;
 constexpr int CARD_PAD = 14;
 constexpr int CARD_RADIUS = 14;
 constexpr int CARD_LINE = 3;
-constexpr int BAR_HEIGHT = 46;
+constexpr int BAR_HEIGHT = QuartzChrome::BAR_HEIGHT;
 constexpr int CELL = 14;
 constexpr int CELL_GAP = 4;
 
@@ -165,20 +164,6 @@ void ReadingStatsActivity::loop() {
   int x = 0;
   int y = 0;
   if (mappedInput.wasScreenTapped(x, y)) turnPage(x >= renderer.getScreenWidth() / 2 ? 1 : -1);
-}
-
-void ReadingStatsActivity::renderTitleBar(const int x, const int y, const int w, const int h) const {
-  renderer.fillRoundedRect(x, y, w, h, CARD_RADIUS, Color::Black);
-  const int textY = y + (h - renderer.getLineHeight(TITLE_FONT)) / 2;
-  renderer.drawText(TITLE_FONT, x + CARD_PAD, textY, tr(STR_READING_STATS), false, EpdFontFamily::BOLD);
-
-  char status[32];
-  char clock[12] = "";
-  if (halClock.isAvailable()) halClock.formatTime(clock, sizeof(clock), SETTINGS.clockFormat == 1);
-  snprintf(status, sizeof(status), "%s%s%u%%", clock, clock[0] ? "  " : "",
-           static_cast<unsigned>(powerManager.getBatteryPercentage()));
-  const int sw = renderer.getTextWidth(BODY_FONT, status);
-  renderer.drawText(BODY_FONT, x + w - CARD_PAD - sw, y + (h - bodyLine(renderer)) / 2, status, false);
 }
 
 void ReadingStatsActivity::renderSummaryPage(const int x, int y, const int w, const int bottom) const {
@@ -378,7 +363,10 @@ void ReadingStatsActivity::render(RenderLock&&) {
   int y = top + MARGIN;
   const int contentBottom = renderer.getScreenHeight() - bottom - metrics.buttonHintsHeight - MARGIN;
 
-  renderTitleBar(x, y, w, BAR_HEIGHT);
+  // Same title bar as every Quartz screen; on touch boards its back arrow
+  // routes to Back through HeaderBackTapTarget.
+  QuartzChrome::drawTitleBar(renderer, Rect{0, top, renderer.getScreenWidth(), BAR_HEIGHT + MARGIN + 2},
+                             tr(STR_READING_STATS), gpio.hasTouch());
   y += BAR_HEIGHT + GAP;
 
   if (!hasData) {

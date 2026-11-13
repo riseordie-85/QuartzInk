@@ -6,6 +6,7 @@
 #include <cassert>
 
 #include "MappedInputManager.h"
+#include "components/QuartzChrome.h"
 #include "components/UITheme.h"
 
 namespace fui = freeink::ui;
@@ -111,6 +112,24 @@ void UiTabListActivity::buildTabBar(UiScreen& screen) {
     tabs[i].selected = activeTab() == i;
     tabs[i].indicator = tabIndicator(i);
   }
+  // Quartz: an outlined segment control; the selected tab fills black and the
+  // outline thickens while the tabs hold the focus.
+  if (QuartzChrome::active()) {
+    const char* labels[MAX_TABS];
+    for (int i = 0; i < count; i++) labels[i] = tabs[i].label;
+    const int16_t band = mappedInput.hasTouch() ? TOUCH_TAB_BAR_HEIGHT + 6 : static_cast<int16_t>(metrics.tabBarHeight);
+    const fui::Rect slot = screen.takeTop(band);
+    const fui::Rect bar{static_cast<int16_t>(slot.x + 10), static_cast<int16_t>(slot.y + 3),
+                        static_cast<int16_t>(slot.width - 20), static_cast<int16_t>(slot.height - 6)};
+    QuartzChrome::paintSegmentTabs(screen.target(), bar, labels, count, activeTab(), ringPos() == 0,
+                                   screen.theme().smallText.font);
+    for (int i = 0; i < count; i++) {
+      screen.frame().hit(QuartzChrome::segmentRect(bar, i, count), ACTION_TAB, static_cast<int16_t>(i));
+    }
+    screen.spacer(static_cast<int16_t>(metrics.verticalSpacing));
+    return;
+  }
+
   fui::TabBarProps tabProps;
   tabProps.tabs = tabs;
   tabProps.count = static_cast<uint16_t>(count);

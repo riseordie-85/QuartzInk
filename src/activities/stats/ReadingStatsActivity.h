@@ -29,7 +29,6 @@ class ReadingStatsActivity final : public Activity {
   enum Shade : uint8_t { Future = 0, None, Light, Medium, Full };
 
  private:
-  void renderTitleBar(int x, int y, int width, int height) const;
   void renderSummaryPage(int x, int y, int width, int bottom) const;
   void renderFinishedPage(int x, int y, int width, int bottom) const;
   void turnPage(int delta);
