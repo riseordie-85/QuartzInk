@@ -1496,9 +1496,11 @@ void CrossPointWebServer::handleRename() const {
     return;
   }
 
-  clearBookCache(itemPath.c_str());
+  // Carry the book's progress, reading stats, bookmarks and clippings along
+  // rather than clearing them. The handle is released first: real SD cards
+  // cannot open one path through two readers.
   file.close();
-  const bool success = ClippingStore::moveBook(itemPath.c_str(), newPath.c_str());
+  const bool success = moveBookPreservingState(itemPath.c_str(), newPath.c_str());
 
   if (success) {
     LOG_DBG("WEB", "Renamed file: %s -> %s", itemPath.c_str(), newPath.c_str());
@@ -1594,9 +1596,11 @@ void CrossPointWebServer::handleMove() const {
     return;
   }
 
-  clearBookCache(itemPath.c_str());
+  // Carry the book's progress, reading stats, bookmarks and clippings along
+  // rather than clearing them. The handle is released first: real SD cards
+  // cannot open one path through two readers.
   file.close();
-  const bool success = ClippingStore::moveBook(itemPath.c_str(), newPath.c_str());
+  const bool success = moveBookPreservingState(itemPath.c_str(), newPath.c_str());
 
   if (success) {
     LOG_DBG("WEB", "Moved file: %s -> %s", itemPath.c_str(), newPath.c_str());
