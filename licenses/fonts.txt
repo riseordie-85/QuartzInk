@@ -404,6 +404,37 @@ https://scripts.sil.org/OFL
 Full terms: see the shared OFL 1.1 section at the end of this file.
 
 ========================================================================
+NV Jost (built-in reading font)
+Source: lib/EpdFont/builtinFonts/source/NVJost (Nico Verbruggen's e-reader cut of Jost)
+========================================================================
+
+Copyright 2020 The Jost Project Authors (https://github.com/indestructible-type/Jost)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is available with a FAQ at: https://openfontlicense.org
+
+========================================================================
+ChareInk7 (fallback glyphs in the built-in NV Jost and Libron fonts)
+Source: lib/EpdFont/builtinFonts/source/ChareInk7
+========================================================================
+
+Copyright (c) 1997-2025 SIL Global (https://www.sil.org/) with Reserved Font
+Names "Charis" and "SIL".
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is available with a FAQ at: https://openfontlicense.org
+
+========================================================================
+NotoSansSymbols (music signs in the built-in NV Jost and Libron fonts)
+Source: lib/EpdFont/builtinFonts/source/NotoSymbols
+========================================================================
+
+Copyright 2022 The Noto Project Authors (https://github.com/notofonts/symbols)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is available with a FAQ at: https://openfontlicense.org
+
+========================================================================
 NotoSans and NotoSansExtended
 Source: lib/EpdFont/builtinFonts/source/NotoSans
 ========================================================================

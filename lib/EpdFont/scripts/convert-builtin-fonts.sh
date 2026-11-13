@@ -4,18 +4,51 @@ set -e
 
 cd "$(dirname "$0")"
 
+# QuartzInk reading fonts: NV Jost (sans, the default) and Libron (serif),
+# replacing Noto Sans. Generated with fontconvert_quartz.py (QuartzInk's
+# converter: per-face include ranges and --darken-aa), whose output matches
+# EpdFontData. ChareInk7 fills in the Greek/Cyrillic letters common in English
+# books, Noto Sans Symbols the music signs.
 READER_FONT_STYLES=("Regular" "Italic" "Bold" "BoldItalic")
-NOTOSANS_FONT_SIZES=(12 14 16 18)
+READER_FONT_SIZES=(12 14 16 18)
+READER_FONT_RENDER_ARGS=(--2bit --compress --pnum --darken-aa --zopfli)
+SYMBOLS_FONT="../builtinFonts/source/NotoSymbols/NotoSansSymbols-Regular.ttf"
+CHAREINK_RANGES=(
+  0x03BB,0x03BB 0x0410,0x0414 0x0418,0x0418 0x041B,0x041B 0x041D,0x0423 0x0425,0x0425 0x0427,0x0427
+  0x042B,0x042C 0x042E,0x0432 0x0434,0x0435 0x0437,0x0437 0x043A,0x043A 0x043D,0x043E 0x0440,0x0440
+  0x0442,0x0442 0x0446,0x0446 0x044C,0x044C 0x044E,0x044E 0x2113,0x2113
+)
+SYMBOL_RANGES=(0x2669,0x266F)
 
-for size in ${NOTOSANS_FONT_SIZES[@]}; do
-  for style in ${READER_FONT_STYLES[@]}; do
-    font_name="notosans_${size}_$(echo $style | tr '[:upper:]' '[:lower:]')"
-    font_path="../builtinFonts/source/NotoSans/NotoSans-${style}.ttf"
-    output_path="../builtinFonts/${font_name}.h"
-    python fontconvert.py $font_name $size $font_path --2bit --compress --pnum --zopfli > $output_path
-    echo "Generated $output_path"
+reader_font_args() {
+  local style="$1"
+  for range in "${CHAREINK_RANGES[@]}" "${SYMBOL_RANGES[@]}"; do
+    printf '%s\n' --additional-intervals "$range"
   done
-done
+  for range in "${CHAREINK_RANGES[@]}"; do
+    printf '%s\n' --font-include-intervals "1:${range}"
+  done
+  for range in "${SYMBOL_RANGES[@]}"; do
+    printf '%s\n' --font-include-intervals "2:${range}"
+  done
+}
+
+generate_reader_family() {
+  local family="$1" source_dir="$2" prefix="$3"
+  for size in ${READER_FONT_SIZES[@]}; do
+    for style in ${READER_FONT_STYLES[@]}; do
+      local font_name="${family}_${size}_$(echo $style | tr '[:upper:]' '[:lower:]')"
+      local output_path="../builtinFonts/${font_name}.h"
+      python fontconvert_quartz.py $font_name $size "../builtinFonts/source/${source_dir}/${prefix}-${style}.ttf" \
+        "../builtinFonts/source/ChareInk7/ChareInk7-${style}.ttf" "$SYMBOLS_FONT" $(reader_font_args "$style") \
+        "${READER_FONT_RENDER_ARGS[@]}" > $output_path
+      echo "Generated $output_path"
+    done
+  done
+}
+
+generate_reader_family nvjost NVJost NV_Jost
+generate_reader_family libron Libron Libron
 
 UI_FONT_SIZES=(10 12)
 UI_FONT_STYLES=("Regular" "Bold")

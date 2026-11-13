@@ -27,7 +27,7 @@ constexpr int CELL_GAP = 4;
 
 constexpr int TITLE_FONT = UI_12_FONT_ID;
 constexpr int BODY_FONT = UI_10_FONT_ID;
-constexpr int VALUE_FONT = NOTOSANS_18_FONT_ID;
+constexpr int VALUE_FONT = NVJOST_18_FONT_ID;
 
 // "42 min", "4h 10m", "128h": short enough for a half-width tile.
 void formatDuration(const uint32_t seconds, char* out, const size_t len) {

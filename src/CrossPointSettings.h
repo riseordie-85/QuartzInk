@@ -108,11 +108,14 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   };
 
   // Font family options (built-in fonts only; SD card fonts use sdFontFamilyName)
-  enum FONT_FAMILY { NOTOSANS = 0, FONT_FAMILY_COUNT };
+  // QuartzInk: NV Jost (sans, the default) and Libron (serif) replace Noto Sans.
+  enum FONT_FAMILY { NVJOST = 0, LIBRON = 1, FONT_FAMILY_COUNT };
   static constexpr uint8_t LEGACY_NOTOSERIF = 0;
   // Persisted IDs stay stable even though the built-in menu now starts at zero.
-  static constexpr uint8_t STORED_NOTOSANS = 1;
+  // 1 was Noto Sans and now means the default sans, NV Jost.
+  static constexpr uint8_t STORED_NVJOST = 1;
   static constexpr uint8_t LEGACY_OPENDYSLEXIC = 2;
+  static constexpr uint8_t STORED_LIBRON = 3;
   static constexpr uint8_t BUILTIN_FONT_COUNT = FONT_FAMILY_COUNT;
   // Reader font size is a point size, not an enum slot — see fontPointSize.
   // Legacy 1.4-and-earlier files stored a 0..3 SMALL/MEDIUM/LARGE/EXTRA_LARGE
@@ -321,7 +324,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t frontButtonLeft = FRONT_HW_LEFT;
   uint8_t frontButtonRight = FRONT_HW_RIGHT;
   // Reader font settings
-  uint8_t fontFamily = NOTOSANS;
+  uint8_t fontFamily = NVJOST;
   // Point size of the reader font. Only sizes the active family actually ships
   // are selectable; SdCardFontSystem::ensureLoaded() snaps this to the nearest
   // available size (and persists the snap) whenever the family changes.

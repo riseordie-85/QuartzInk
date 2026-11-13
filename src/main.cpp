@@ -74,34 +74,25 @@ static unsigned long allowSleepAt = 0;
 // while the button is held; swallow the one release that ends that wake gesture.
 static bool wakePowerReleasePending = false;
 
-// Fonts
-EpdFont notosans14RegularFont(&notosans_14_regular);
-EpdFont notosans14BoldFont(&notosans_14_bold);
-EpdFont notosans14ItalicFont(&notosans_14_italic);
-EpdFont notosans14BoldItalicFont(&notosans_14_bolditalic);
-EpdFontFamily notosans14FontFamily(14, &notosans14RegularFont, &notosans14BoldFont, &notosans14ItalicFont,
-                                   &notosans14BoldItalicFont);
+// Fonts: QuartzInk's built-in reading families, NV Jost (sans) and Libron (serif).
+#define QZ_READER_FAMILY(name, size)                                                                                   \
+  EpdFont name##size##RegularFont(&name##_##size##_regular);                                                           \
+  EpdFont name##size##BoldFont(&name##_##size##_bold);                                                                 \
+  EpdFont name##size##ItalicFont(&name##_##size##_italic);                                                             \
+  EpdFont name##size##BoldItalicFont(&name##_##size##_bolditalic);                                                     \
+  EpdFontFamily name##size##FontFamily(size, &name##size##RegularFont, &name##size##BoldFont, &name##size##ItalicFont, \
+                                       &name##size##BoldItalicFont);
+QZ_READER_FAMILY(nvjost, 14)
+QZ_READER_FAMILY(libron, 14)
 #ifndef OMIT_FONTS
-EpdFont notosans12RegularFont(&notosans_12_regular);
-EpdFont notosans12BoldFont(&notosans_12_bold);
-EpdFont notosans12ItalicFont(&notosans_12_italic);
-EpdFont notosans12BoldItalicFont(&notosans_12_bolditalic);
-EpdFontFamily notosans12FontFamily(12, &notosans12RegularFont, &notosans12BoldFont, &notosans12ItalicFont,
-                                   &notosans12BoldItalicFont);
-EpdFont notosans16RegularFont(&notosans_16_regular);
-EpdFont notosans16BoldFont(&notosans_16_bold);
-EpdFont notosans16ItalicFont(&notosans_16_italic);
-EpdFont notosans16BoldItalicFont(&notosans_16_bolditalic);
-EpdFontFamily notosans16FontFamily(16, &notosans16RegularFont, &notosans16BoldFont, &notosans16ItalicFont,
-                                   &notosans16BoldItalicFont);
-EpdFont notosans18RegularFont(&notosans_18_regular);
-EpdFont notosans18BoldFont(&notosans_18_bold);
-EpdFont notosans18ItalicFont(&notosans_18_italic);
-EpdFont notosans18BoldItalicFont(&notosans_18_bolditalic);
-EpdFontFamily notosans18FontFamily(18, &notosans18RegularFont, &notosans18BoldFont, &notosans18ItalicFont,
-                                   &notosans18BoldItalicFont);
-
+QZ_READER_FAMILY(nvjost, 12)
+QZ_READER_FAMILY(nvjost, 16)
+QZ_READER_FAMILY(nvjost, 18)
+QZ_READER_FAMILY(libron, 12)
+QZ_READER_FAMILY(libron, 16)
+QZ_READER_FAMILY(libron, 18)
 #endif  // OMIT_FONTS
+#undef QZ_READER_FAMILY
 
 EpdFont smallFont(&ubuntu_8_regular);
 EpdFontFamily smallFontFamily(8, &smallFont);
@@ -520,11 +511,15 @@ void setupDisplayAndFonts(bool seamless = false) {
   }
   fontCacheManager.setFontDecompressor(&fontDecompressor);
   renderer.setFontCacheManager(&fontCacheManager);
-  renderer.insertFont(NOTOSANS_14_FONT_ID, notosans14FontFamily);
+  renderer.insertFont(NVJOST_14_FONT_ID, nvjost14FontFamily);
+  renderer.insertFont(LIBRON_14_FONT_ID, libron14FontFamily);
 #ifndef OMIT_FONTS
-  renderer.insertFont(NOTOSANS_12_FONT_ID, notosans12FontFamily);
-  renderer.insertFont(NOTOSANS_16_FONT_ID, notosans16FontFamily);
-  renderer.insertFont(NOTOSANS_18_FONT_ID, notosans18FontFamily);
+  renderer.insertFont(NVJOST_12_FONT_ID, nvjost12FontFamily);
+  renderer.insertFont(NVJOST_16_FONT_ID, nvjost16FontFamily);
+  renderer.insertFont(NVJOST_18_FONT_ID, nvjost18FontFamily);
+  renderer.insertFont(LIBRON_12_FONT_ID, libron12FontFamily);
+  renderer.insertFont(LIBRON_16_FONT_ID, libron16FontFamily);
+  renderer.insertFont(LIBRON_18_FONT_ID, libron18FontFamily);
 #endif  // OMIT_FONTS
   renderer.insertFont(UI_10_FONT_ID, ui10FontFamily);
   renderer.insertFont(UI_12_FONT_ID, ui12FontFamily);

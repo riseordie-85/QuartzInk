@@ -51,8 +51,8 @@ constexpr uint8_t SPACING_LINE[] = {CrossPointSettings::LINE_SPACING_110, CrossP
 constexpr uint8_t SPACING_WORD[] = {100, 100, 110};
 
 // Built-in reader families, in the Font row's order.
-constexpr uint8_t BUILTIN_FAMILIES[] = {CrossPointSettings::NOTOSANS};
-constexpr StrId BUILTIN_FAMILY_LABELS[] = {StrId::STR_NOTO_SANS};
+constexpr uint8_t BUILTIN_FAMILIES[] = {CrossPointSettings::NVJOST, CrossPointSettings::LIBRON};
+constexpr StrId BUILTIN_FAMILY_LABELS[] = {StrId::STR_NV_JOST, StrId::STR_LIBRON};
 static_assert(std::size(BUILTIN_FAMILIES) == std::size(BUILTIN_FAMILY_LABELS));
 
 const fui::Paint BLACK = fui::Paint::solid(fui::Color::Black);

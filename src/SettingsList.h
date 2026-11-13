@@ -32,7 +32,8 @@ inline SettingInfo buildFontFamilySetting(const SdCardFontRegistry* registry) {
   if (registry && registry->getFamilyCount() > 0) {
     const auto& families = registry->getFamilies();
     allStringValues.reserve(CrossPointSettings::BUILTIN_FONT_COUNT + families.size());
-    allStringValues.push_back(I18N.get(StrId::STR_NOTO_SANS));
+    allStringValues.push_back(I18N.get(StrId::STR_NV_JOST));
+    allStringValues.push_back(I18N.get(StrId::STR_LIBRON));
     std::transform(families.begin(), families.end(), std::back_inserter(allStringValues),
                    [](const SdCardFontFamilyInfo& f) { return f.name; });
   }
@@ -40,7 +41,7 @@ inline SettingInfo buildFontFamilySetting(const SdCardFontRegistry* registry) {
   SettingInfo s;
   s.nameId = StrId::STR_FONT_FAMILY;
   s.type = SettingType::ENUM;
-  s.enumValues = {StrId::STR_NOTO_SANS};
+  s.enumValues = {StrId::STR_NV_JOST, StrId::STR_LIBRON};
   s.enumStringValues = std::move(allStringValues);
   s.key = "fontFamily";
   s.category = StrId::STR_CAT_READER;
