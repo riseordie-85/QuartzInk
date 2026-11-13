@@ -516,8 +516,9 @@ void HomeActivity::render(RenderLock&&) {
     const auto drawQuartz = [&] {
       renderer.clearScreen();
       quartzUi->renderUi();
+      // The front Left/Right buttons move the focus sideways on Quartz Home.
       const auto labels = mappedInput.mapLabels(hasContinueReading ? tr(STR_RESUME) : "", tr(STR_SELECT),
-                                                tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+                                                tr(STR_DIR_LEFT), tr(STR_DIR_RIGHT));
       GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
     };
     drawQuartz();
