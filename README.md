@@ -117,7 +117,7 @@ To go back to CrossPoint, flash an official release from the same page.
 ### USB-locked devices
 
 Some Xteink units bought from third-party stores ship with USB flashing locked. CrossPoint's
-[Xteink Unlocker](https://crosspointreader.com/#unlock-tool) only officially supports CrossPoint and CrossInk;
+[Xteink Unlocker](https://crosspointreader.com/#unlock-tool) is only meant for official CrossPoint firmware;
 flashing other firmware on a locked device can leave it stuck with no way back. Unlock and install CrossPoint first,
 then flash QuartzInk.
 
@@ -173,9 +173,8 @@ See [Contributing docs](./docs/contributing/README.md) for prerequisites, tests 
 
 QuartzInk is a CrossPoint project: it would not exist without
 [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) and its contributors. If you like this
-firmware, please consider [supporting them](https://app.royalty.dev/crosspoint-reader/crosspoint-reader). Its first
-version was built on [CrossInk](https://github.com/uxjulia/CrossInk) by uxjulia, whose reading stats format
-QuartzInk still reads. NV Jost, Libron and the other NV fonts are by
+firmware, please consider [supporting them](https://app.royalty.dev/crosspoint-reader/crosspoint-reader). NV Jost,
+Libron and the other NV fonts are by
 [Nico Verbruggen](https://github.com/nicoverbruggen/ebook-fonts), under the SIL Open Font License.
 
 QuartzInk is released under the same [MIT License](./LICENSE) as CrossPoint, and is **not affiliated with Xteink,

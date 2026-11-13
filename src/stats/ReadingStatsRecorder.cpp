@@ -18,8 +18,8 @@
 namespace readingstats {
 namespace {
 
-// QuartzInk (from CrossInk) named EPUB caches by a 64-bit FNV hash of the
-// path; CrossPoint names them by std::hash. Same book, different folder.
+// QuartzInk 1.x named EPUB caches by a 64-bit FNV hash of the path;
+// CrossPoint names them by std::hash. Same book, different folder.
 std::string quartzInkCachePath(const std::string& bookPath) {
   return "/.crosspoint/epub_" + std::to_string(ZipFile::fnvHash64(bookPath.c_str(), bookPath.size()));
 }

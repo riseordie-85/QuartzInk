@@ -107,8 +107,8 @@ void ReadingStatsActivity::onEnter() {
     const uint32_t yearStart = readingStatsDayIndex(ReadingStatsDate{now.date.year, 1, 1});
     yearSeconds = daily.secondsBetween(yearStart, today);
 
-    // Last cell column is this week; days CrossInk marked before the daily
-    // log existed show as the lightest shade.
+    // Last cell column is this week; days the stats history marked before the
+    // daily log existed show as the lightest shade.
     const uint32_t firstDay = weekStart - (MAX_WEEKS - 1) * 7;
     for (int i = 0; i < MAX_WEEKS * 7; ++i) {
       const uint32_t day = firstDay + static_cast<uint32_t>(i);
@@ -122,7 +122,7 @@ void ReadingStatsActivity::onEnter() {
   }
 
   finished = finishedbooks::summarize(currentYear, recent.data(), recent.size());
-  // CrossInk counted finishes before this log existed.
+  // The global count includes finishes from before this log existed.
   finishedAll = std::max<uint32_t>(global.completedBooks, finished.total);
 
   hasData = totalSeconds > 0 || finishedAll > 0;

@@ -18,7 +18,7 @@ struct Session {
 };
 
 // This book's stats. On first use under CrossPoint it adopts the stats a
-// QuartzInk/CrossInk build saved under that build's cache folder name.
+// QuartzInk 1.x build saved under that build's cache folder name.
 BookReadingStats loadBook(const std::string& bookPath, const std::string& cachePath);
 
 // Book cache folder the readers use for this path (EPUB, TXT/MD or XTC);
@@ -26,7 +26,7 @@ BookReadingStats loadBook(const std::string& bookPath, const std::string& cacheP
 std::string cachePathForBook(const std::string& bookPath);
 
 // Read-only: this book's stats from its cache folder, else from the folder a
-// QuartzInk/CrossInk build used. Never writes; safe from the web server.
+// QuartzInk 1.x build used. Never writes; safe from the web server.
 BookReadingStats peekBook(const std::string& bookPath);
 
 // Adds one finished reading session to the book, global and daily stats.

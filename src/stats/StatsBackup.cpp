@@ -17,7 +17,9 @@
 namespace {
 constexpr char LOG_TAG[] = "SBACK";
 constexpr char GLOBAL_STATS_PATH[] = "/.crosspoint/global_stats.bin";
-constexpr char BACKUP_DIR[] = "/.crossink-stats-backup";
+constexpr char BACKUP_DIR[] = "/.quartzink-stats-backup";
+// Where QuartzInk 1.x kept backups; moved to BACKUP_DIR on first use.
+constexpr char LEGACY_BACKUP_DIR[] = "/.crossink-stats-backup";
 constexpr int DEFAULT_BACKUP_KEEP_COUNT = 7;
 
 struct BackupName {
@@ -65,6 +67,17 @@ bool parseIncrementingIndex(const char* name, uint32_t& outIndex) {
   if (value == 0) return false;
   outIndex = value;
   return true;
+}
+
+// Moves backups from the 1.x folder once, so they keep counting toward the
+// kept set. Runs before every use; after the move it is a single exists().
+void adoptLegacyBackupDir() {
+  if (!Storage.exists(LEGACY_BACKUP_DIR) || Storage.exists(BACKUP_DIR)) return;
+  if (Storage.rename(LEGACY_BACKUP_DIR, BACKUP_DIR)) {
+    LOG_INF(LOG_TAG, "Moved stats backups to %s", BACKUP_DIR);
+  } else {
+    LOG_ERR(LOG_TAG, "Could not move stats backups from %s", LEGACY_BACKUP_DIR);
+  }
 }
 
 bool nextIncrementingBackupName(char* out, const size_t outLen) {
@@ -201,6 +214,7 @@ bool backupFileMatches(const char* path, const uint8_t* expected, const size_t e
 }  // namespace
 
 bool backupGlobalStats(const bool manual, char* outFileName, const size_t outFileNameLen) {
+  adoptLegacyBackupDir();
   if (!Storage.ensureDirectoryExists(BACKUP_DIR)) {
     LOG_ERR(LOG_TAG, "Could not create stats backup directory: %s", BACKUP_DIR);
     return false;
@@ -243,6 +257,7 @@ bool backupGlobalStats(const bool manual, char* outFileName, const size_t outFil
 
 int pruneBackups(const int keep) {
   if (keep < 0) return 0;
+  adoptLegacyBackupDir();
 
   HalFile dir = Storage.open(BACKUP_DIR);
   if (!dir || !dir.isDirectory()) {
