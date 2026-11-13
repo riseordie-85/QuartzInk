@@ -222,31 +222,35 @@ void QuartzHomeUi::moveFocus(const int rowDelta, const int colDelta) {
     focus = rows[0].items[0];
     return;
   }
+  const bool onShelf = focus >= SHELF_BASE;
   if (colDelta != 0) {
     const int n = rows[r].count;
-    focus = rows[r].items[(c + colDelta + n) % n];
-    return;
-  }
-  const bool onShelf = focus >= SHELF_BASE;
-  const int target = r + rowDelta;
-  const bool leavingShelves = onShelf && (target < 0 || target >= rowCount || rows[target].items[0] < SHELF_BASE);
-  // Moving past the last shelf row turns to the next page of shelves, and back.
-  if (leavingShelves && rowDelta > 0 && shelfPage + 1 < shelfPageCount()) {
-    ++shelfPage;
-    focus = SHELF_BASE + shelfPage * SHELVES_PER_PAGE + std::min(c, 1);
-    if (focus - SHELF_BASE >= static_cast<int>(shelves.size())) focus = SHELF_BASE + shelfPage * SHELVES_PER_PAGE;
-    return;
-  }
-  if (leavingShelves && rowDelta < 0 && shelfPage > 0) {
-    --shelfPage;
-    rowCount = buildRows(rows);
-    for (int i = rowCount - 1; i >= 0; --i) {
-      if (rows[i].items[0] >= SHELF_BASE) {
-        focus = rows[i].items[std::min(c, rows[i].count - 1)];
-        return;
+    const int col = c + colDelta;
+    // Past the end of a shelf row, Left/Right turn the shelf page (as a swipe
+    // does) and land on the same row of the new page.
+    if (onShelf && (col < 0 || col >= n) && shelfPageCount() > 1) {
+      int shelfRow = 0;
+      for (int i = 0; i < r; ++i) shelfRow += rows[i].items[0] >= SHELF_BASE ? 1 : 0;
+      const int pages = shelfPageCount();
+      shelfPage = (shelfPage + (colDelta > 0 ? 1 : pages - 1)) % pages;
+      rowCount = buildRows(rows);
+      int lastShelfRow = -1;
+      for (int i = 0; i < rowCount; ++i) {
+        if (rows[i].items[0] < SHELF_BASE) continue;
+        lastShelfRow = i;
+        if (shelfRow-- == 0) break;
       }
+      if (lastShelfRow >= 0) {
+        const FocusRow& to = rows[lastShelfRow];
+        focus = to.items[colDelta > 0 ? 0 : to.count - 1];
+      }
+      return;
     }
+    focus = rows[r].items[(col + n) % n];
+    return;
   }
+  // Up/Down always leave the shelves for the next section; pages turn sideways.
+  const int target = r + rowDelta;
   const int next = (target + rowCount) % rowCount;
   // Keep roughly the same horizontal position across rows of different widths.
   const int fromCount = rows[r].count;

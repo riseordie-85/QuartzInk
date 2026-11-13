@@ -33,7 +33,7 @@
 
     <div class="card">
       <h2>Upload Font</h2>
-      <p class="family-meta" style="margin: 0 0 12px;">Choose the folder that contains one font family. The picker selects folders, not single files.</p>
+      <p class="family-meta" style="margin: 0 0 12px;">Choose one font family's folder, or a folder of family folders (like <code>fonts</code>) to add them all at once. The picker selects folders, not single files.</p>
       <form class="font-upload-form" id="uploadForm">
         <input type="file" id="fontFiles" webkitdirectory directory multiple required />
         <button type="submit" class="btn btn-primary">Upload</button>
@@ -156,6 +156,26 @@
       return Array.from(fileList).filter(f => fontExtRe().test(f.name));
     }
 
+    // QuartzInk: a picked folder may hold one family's files, or a folder per
+    // family (fonts/NV Charis/...). Files two or more folders deep take their
+    // family from the folder they sit in; otherwise from the filename.
+    function familyForFile(file) {
+      const parts = (file.webkitRelativePath || '').split('/');
+      parts.pop();
+      if (parts.length >= 2) return sanitizeFamily(parts[parts.length - 1]);
+      return sanitizeFamily(familyFromFilename(file.name));
+    }
+
+    function groupByFamily(files) {
+      const groups = new Map();
+      for (const file of files) {
+        const family = familyForFile(file);
+        if (!groups.has(family)) groups.set(family, []);
+        groups.get(family).push(file);
+      }
+      return groups;
+    }
+
     document.getElementById('fontFiles').addEventListener('change', function() {
       const info = document.getElementById('pickedInfo');
       const files = supportedFontFilesOnly(this.files);
@@ -163,9 +183,10 @@
         info.textContent = 'No ' + supportedExts() + ' files found in the selected folder.';
         return;
       }
-      const family = sanitizeFamily(familyFromFilename(files[0].name));
-      info.textContent = files.length + ' file' + (files.length === 1 ? '' : 's') +
-        ' → family "' + family + '"';
+      const families = [...groupByFamily(files).keys()];
+      info.textContent = files.length + ' file' + (files.length === 1 ? '' : 's') + ' → ' +
+        (families.length === 1 ? 'family "' + families[0] + '"'
+                               : families.length + ' families: ' + families.join(', '));
     });
 
     document.getElementById('uploadForm').addEventListener('submit', async function(e) {
@@ -176,43 +197,40 @@
         return;
       }
 
-      // A directory picker may include files from multiple family subfolders.
-      // Reject that up front — otherwise files[0]'s family is silently reused
-      // for every upload, corrupting the install layout.
-      const families = [...new Set(files.map(f => sanitizeFamily(familyFromFilename(f.name))))];
-      if (families.length !== 1) {
-        showWebToast('Please select files from a single font family.', true);
-        return;
-      }
-      const family = families[0];
-
+      const groups = groupByFamily(files);
       let uploaded = 0;
-      for (const file of files) {
-        // Re-shown (and its auto-hide timer reset) on every file, so the
-        // toast stays up for the whole upload rather than disappearing
-        // mid-way through a multi-file transfer.
-        showWebToast('Uploading ' + (uploaded + 1) + '/' + files.length + ': ' + file.name, false);
-        const formData = new FormData();
-        formData.append('family', family);
-        formData.append('file', file, file.name);
-        try {
-          const res = await fetch('/api/fonts/upload', { method: 'POST', body: formData });
-          const data = await res.json();
-          if (!data.ok) {
-            showWebToast('Failed on ' + file.name + ': ' + (data.error || 'unknown error'), true);
-            await loadFonts();
-            return;
+      const failed = [];
+      for (const [family, familyFiles] of groups) {
+        for (const file of familyFiles) {
+          // Re-shown (and its auto-hide timer reset) on every file, so the
+          // toast stays up for the whole upload.
+          showWebToast('Uploading ' + (uploaded + failed.length + 1) + '/' + files.length + ': ' +
+            family + ' / ' + file.name, false);
+          const formData = new FormData();
+          formData.append('family', family);
+          formData.append('file', file, file.name);
+          try {
+            const res = await fetch('/api/fonts/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (!data.ok) {
+              failed.push(family + ' / ' + file.name + ' (' + (data.error || 'unknown error') + ')');
+              continue;
+            }
+          } catch (err) {
+            failed.push(family + ' / ' + file.name + ' (' + err.message + ')');
+            continue;
           }
-        } catch (err) {
-          showWebToast('Upload error on ' + file.name + ': ' + err.message, true);
-          await loadFonts();
-          return;
+          uploaded++;
         }
-        uploaded++;
       }
 
-      showWebToast('Uploaded ' + uploaded + ' file' + (uploaded === 1 ? '' : 's') +
-        ' to family "' + family + '".', false);
+      const familyText = groups.size === 1 ? 'family "' + [...groups.keys()][0] + '"' : groups.size + ' families';
+      if (failed.length === 0) {
+        showWebToast('Uploaded ' + uploaded + ' file' + (uploaded === 1 ? '' : 's') + ' to ' + familyText + '.', false);
+      } else {
+        showWebAlert('Uploaded ' + uploaded + ' of ' + files.length + ' files to ' + familyText +
+          '. Failed: ' + failed.join('; '));
+      }
       await loadFonts();
     });
 
