@@ -1,5 +1,5 @@
 <footer class="qz-footer">
-  QuartzInk &bull; A CrossPoint/CrossInk fork &bull;
+  QuartzInk &bull; A CrossPoint project &bull;
   <a href="https://github.com/riseordie-85/QuartzInk" target="_blank" rel="noopener noreferrer">Open Source</a>
 </footer>
 <dialog id="webMessageDialog" class="web-dialog" aria-labelledby="webDialogTitle" aria-describedby="webDialogMessage">

@@ -15,6 +15,7 @@
 #include "UiAppHelpers.h"
 #include "fontIds.h"
 #include "icons/headerIcons.h"
+#include "images/QuartzBoot.h"
 #include "images/QuartzLogo.h"
 
 namespace fui = freeink::ui;
@@ -134,6 +135,18 @@ int drawLogo(const GfxRenderer& renderer, const int y) {
                           static_cast<int16_t>(QUARTZ_LOGO_HEIGHT)},
                 logo, fui::BitmapMode::Center);
   return QUARTZ_LOGO_HEIGHT;
+}
+
+void drawBootArt(const GfxRenderer& renderer) {
+  auto target = makeUiTarget(renderer);
+  fui::BitmapRef art;
+  art.data = QuartzBoot;
+  art.width = QUARTZ_BOOT_WIDTH;
+  art.height = QUARTZ_BOOT_HEIGHT;
+  art.format = fui::BitmapFormat::BW1;
+  target.bitmap(fui::Rect{0, 0, static_cast<int16_t>(renderer.getScreenWidth()),
+                          static_cast<int16_t>(renderer.getScreenHeight())},
+                art, fui::BitmapMode::Cover);
 }
 
 fui::StyleSet rowStyles() {
