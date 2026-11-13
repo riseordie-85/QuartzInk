@@ -62,6 +62,7 @@
 #include "fontIds.h"
 #include "util/BookmarkUtil.h"
 #include "util/ButtonNavigator.h"
+#include "util/DictionaryRegistry.h"
 #include "util/ScreenshotUtil.h"
 
 namespace {
@@ -462,13 +463,47 @@ void EpubReaderActivity::backgroundBuildTick() {
 
 void EpubReaderActivity::openDictionaryWordSelect() {
   if (SETTINGS.dictionaryName[0] == '\0') {
+    chooseDictionaryThenLookUp();
+    return;
+  }
+  startClipSelection(-1, -1, ClipSelectionActivity::Mode::Lookup);
+}
+
+// No dictionary chosen yet: use the only one on the card, or ask which, then
+// carry on with the lookup. With none on the card, say where they go.
+void EpubReaderActivity::chooseDictionaryThenLookUp() {
+  std::vector<DictionaryEntry> found;
+  DictionaryRegistry::discover(found);
+  if (found.empty()) {
     pendingLookupSelection = {};
     showDictionaryMessage = true;
     dictionaryMessageTime = millis();
     requestUpdate();
     return;
   }
-  startClipSelection(-1, -1, ClipSelectionActivity::Mode::Lookup);
+  if (found.size() == 1) {
+    useDictionary(found.front().name);
+    startClipSelection(-1, -1, ClipSelectionActivity::Mode::Lookup);
+    return;
+  }
+  dictionaryChoices.clear();
+  dictionaryChoices.reserve(found.size());
+  for (auto& entry : found) dictionaryChoices.push_back(std::move(entry.name));
+  dictionaryPopup.show(StrId::STR_DICTIONARY, dictionaryChoices, 0, [this](const int index) {
+    if (index < 0 || index >= static_cast<int>(dictionaryChoices.size())) return;
+    useDictionary(dictionaryChoices[index]);
+    dictionaryChoices.clear();
+    dictionaryChoices.shrink_to_fit();
+    startClipSelection(-1, -1, ClipSelectionActivity::Mode::Lookup);
+  });
+  requestUpdate();
+}
+
+void EpubReaderActivity::useDictionary(const std::string& name) {
+  strncpy(SETTINGS.dictionaryName, name.c_str(), sizeof(SETTINGS.dictionaryName) - 1);
+  SETTINGS.dictionaryName[sizeof(SETTINGS.dictionaryName) - 1] = '\0';
+  if (!SETTINGS.saveToFile()) LOG_ERR("DICT", "Failed to save dictionary %s", name.c_str());
+  LOG_INF("DICT", "Dictionary chosen from Look up: %s", name.c_str());
 }
 
 void EpubReaderActivity::startClipSelection(const int initialX, const int initialY,
@@ -684,6 +719,17 @@ void EpubReaderActivity::openClippings() {
 void EpubReaderActivity::loop() {
   if (loadFailurePopup.isActive()) {
     loadFailurePopup.handleInput(mappedInput, [this] { requestUpdate(); });
+    return;
+  }
+  if (dictionaryPopup.isActive()) {
+    dictionaryPopup.handleInput(mappedInput, [this] { requestUpdate(); });
+    // Back closes it without a choice: the page comes back.
+    if (!dictionaryPopup.isActive() && !dictionaryChoices.empty()) {
+      dictionaryChoices.clear();
+      dictionaryChoices.shrink_to_fit();
+      pendingLookupSelection = {};
+      requestUpdate();
+    }
     return;
   }
   if (!epub) {
@@ -1682,6 +1728,11 @@ void EpubReaderActivity::render(RenderLock&& lock) {
     loadFailurePopup.processRender(renderer, mappedInput);
     return;
   }
+  if (dictionaryPopup.isActive()) {
+    renderer.clearScreen();
+    dictionaryPopup.processRender(renderer, mappedInput);
+    return;
+  }
   ReaderActivity::render(std::move(lock));
 }
 
@@ -2073,7 +2124,7 @@ void EpubReaderActivity::renderBook() {
   }
 
   if (showDictionaryMessage) {
-    GUI.drawPopup(renderer, tr(STR_DICT_NO_DICT_SET));
+    GUI.drawPopup(renderer, tr(STR_QZ_NO_DICTIONARIES));
   }
 
   // Glyphs of a damaged .cpfont draw as blanks; say why, once per loaded font.

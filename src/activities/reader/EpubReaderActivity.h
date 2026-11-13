@@ -48,6 +48,9 @@ class EpubReaderActivity final : public ReaderActivity {
   bool showBookmarkMessage = false;
   bool showDictionaryMessage = false;
   unsigned long dictionaryMessageTime = 0UL;
+  // QuartzInk: Look up with no dictionary chosen offers the ones on the card.
+  OptionPopup dictionaryPopup;
+  std::vector<std::string> dictionaryChoices;
   bool showFontDamagedMessage = false;
   unsigned long fontDamagedMessageTime = 0UL;
   bool showClippingMessage = false;
@@ -241,6 +244,8 @@ class EpubReaderActivity final : public ReaderActivity {
   // date unverified); OK exits, "Sync time" (when offered) verifies the
   // clock over Wi-Fi and reopens the book.
   OptionPopup loadFailurePopup;
+  void chooseDictionaryThenLookUp();
+  void useDictionary(const std::string& name);
   // Protection error captured by loadBook() for handleLoadFailure(); the
   // failed Epub itself does not outlive loadBook().
   std::string loadProtectionError;
