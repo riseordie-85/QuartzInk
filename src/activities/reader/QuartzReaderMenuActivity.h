@@ -42,6 +42,10 @@ class QuartzReaderMenuActivity final : public Activity {
     uint32_t chapterPageCount = 0;
     float bookProgressPercent = 0.0f;
     bool pageBookmarked = false;
+    // Toggles this page's bookmark and returns whether it is now bookmarked, so
+    // the menu can stay open. Null: the Bookmark tool closes the menu instead.
+    bool (*toggleBookmark)(void* ctx) = nullptr;
+    void* toggleBookmarkContext = nullptr;
   };
 
   QuartzReaderMenuActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, BookInfo book);

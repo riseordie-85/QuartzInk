@@ -289,6 +289,12 @@ void QuartzReaderMenuActivity::activateTool(const Tool tool) {
       closeMenu(Action::Contents);
       return;
     case Tool::Bookmark:
+      if (book.toggleBookmark) {
+        // Toggle in place; the tool fills black while the page is bookmarked.
+        book.pageBookmarked = book.toggleBookmark(book.toggleBookmarkContext);
+        requestUpdate();
+        return;
+      }
       closeMenu(Action::ToggleBookmark);
       return;
     case Tool::Lookup:
@@ -526,11 +532,13 @@ int16_t QuartzReaderMenuActivity::drawTopBar(UiApp::ScreenType& screen, const fu
     const Tool tool = toolAt(i);
     const int16_t slotX = static_cast<int16_t>(rowX + i * slotW);
     const fui::Rect toolRect{static_cast<int16_t>(slotX + (slotW - toolW) / 2), y, toolW, TOOL_HEIGHT};
-    const bool active = tool == Tool::PageSettings && sheetOpen;
+    // Filled black: the open sheet's tool, a bookmarked page's bookmark, and
+    // the button focus. A ring around the tool marks focus on a filled one.
+    const bool active = (tool == Tool::PageSettings && sheetOpen) || (tool == Tool::Bookmark && book.pageBookmarked);
     const bool focused = buttonDevice && focusRow == Row::Toolbar && focusTool == i;
     const bool filled = active || focused;
     if (filled) target.fill(toolRect, BLACK, 12);
-    if (focused && !active) target.stroke(insetRect(toolRect, -4, -4), BLACK, FOCUS_BORDER, 15);
+    if (focused && active) target.stroke(insetRect(toolRect, -4, -4), BLACK, FOCUS_BORDER, 15);
     screen.frame().hit(toolRect, ACTION_TOOL, i,
                        tool == Tool::Bookmark ? static_cast<uint16_t>(fui::InputDefault | fui::InputLongPress)
                                               : static_cast<uint16_t>(fui::InputDefault));
@@ -555,13 +563,6 @@ int16_t QuartzReaderMenuActivity::drawTopBar(UiApp::ScreenType& screen, const fu
         break;
     }
     target.bitmap(toolRect, icon, fui::BitmapMode::Center, ink);
-    if (tool == Tool::Bookmark && book.pageBookmarked) {
-      // A small filled corner marks a bookmarked page.
-      const int16_t mark = 8;
-      target.fill(fui::Rect{static_cast<int16_t>(toolRect.right() - mark - 6), static_cast<int16_t>(toolRect.y + 6),
-                            mark, mark},
-                  ink, 4);
-    }
   }
   return bar.bottom();
 }

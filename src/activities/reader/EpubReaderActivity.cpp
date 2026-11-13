@@ -1205,6 +1205,13 @@ void EpubReaderActivity::openQuartzMenu() {
   info.bookProgressPercent =
       std::clamp(epub->calculateProgress(currentSpineIndex, position.chapterFraction()), 0.0f, 1.0f) * 100.0f;
   info.pageBookmarked = currentPageBookmarked;
+  // The page stays laid out under the menu, so the bookmark toggles in place.
+  info.toggleBookmark = [](void* ctx) {
+    auto* self = static_cast<EpubReaderActivity*>(ctx);
+    self->addBookmark();
+    return self->currentPageBookmarked;
+  };
+  info.toggleBookmarkContext = this;
 
   startActivityForResult(std::make_unique<QuartzReaderMenuActivity>(renderer, mappedInput, std::move(info)),
                          [this](const ActivityResult& result) {
