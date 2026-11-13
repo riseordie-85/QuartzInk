@@ -6,12 +6,17 @@
 #include "RecentBooksStore.h"
 #include "activities/Activity.h"
 #include "components/CoverGridHomeUi.h"
+#include "components/QuartzHomeUi.h"
 #include "util/ButtonNavigator.h"
 
 struct Rect;
 
 class HomeActivity final : public Activity {
   std::unique_ptr<CoverGridHomeUi> coverGridUi;
+  // Quartz theme's Home (clock bar, current book, recent covers, /Books shelves).
+  std::unique_ptr<QuartzHomeUi> quartzUi;
+  void beginQuartzHome();
+  bool handleQuartzInput();
   ButtonNavigator buttonNavigator;
   int selectorIndex = 0;
   bool recentsLoading = false;
@@ -22,7 +27,7 @@ class HomeActivity final : public Activity {
   // The home "library" slot (index 3) shows Plugins while the plugin system is
   // enabled, otherwise OPDS when a server is configured. NONE hides the slot.
   // NetworkModeSelectionActivity lists OPDS in exactly the other cases.
-  bool showsStatsItem() const { return !coverGridUi; }
+  bool showsStatsItem() const { return !coverGridUi && !quartzUi; }
   HomeMenuItem slotItem() const {
     if (hasPlugins) return HomeMenuItem::PLUGINS;
     return hasOpdsServers ? HomeMenuItem::OPDS_BROWSER : HomeMenuItem::NONE;

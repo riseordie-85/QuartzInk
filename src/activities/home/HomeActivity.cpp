@@ -23,8 +23,11 @@
 #include "MappedInputManager.h"
 #include "OpdsServerStore.h"
 #include "RecentBooksStore.h"
+#include "components/QuartzChrome.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
+#include "stats/ReadingStatsRecorder.h"
+#include "util/BookProgress.h"
 
 int HomeActivity::getMenuItemCount() const {
   int count = showsStatsItem() ? 5 : 4;  // File Browser, Library, [Reading Stats,] File transfer, Settings
@@ -169,6 +172,14 @@ void HomeActivity::loadRecentCovers(int coverHeight) {
   for (RecentBook& book : recentBooks) {
     // The cover grid shares one slot size; generating at any other height
     // would rescale the dithered thumb at draw time and alias badly.
+    if (quartzUi) {
+      // Each Quartz slot has its own height (current book card vs recent covers).
+      const size_t index = static_cast<size_t>(&book - recentBooks.data());
+      loadGridCover(book, quartzUi->thumbHeightFor(index), showingLoading, popupRect);
+      ++progress;
+      if (showingLoading) GUI.fillPopupProgress(renderer, popupRect, progress * 100 / recentBooks.size());
+      continue;
+    }
     const int thumbHeight = coverGridUi ? coverGridUi->thumbHeightFor() : coverHeight;
     if (coverGridUi) {
       loadGridCover(book, thumbHeight, showingLoading, popupRect);
@@ -239,13 +250,20 @@ void HomeActivity::onEnter() {
   hasPlugins = SETTINGS.pluginsEnabled != 0;
 
   const auto& metrics = UITheme::getInstance().getMetrics();
-  if (UITheme::getInstance().hasCoverGridHome()) {
+  if (QuartzChrome::active()) {
+    // Screen-lifetime interaction table and cover cache exceed the stack budget.
+    quartzUi = makeUniqueNoThrow<QuartzHomeUi>(renderer);
+    if (!quartzUi) LOG_ERR("HOME", "OOM: Quartz home UI; using standard home");
+  } else if (UITheme::getInstance().hasCoverGridHome()) {
     // Screen-lifetime interaction tables and component properties exceed the stack budget.
     coverGridUi = makeUniqueNoThrow<CoverGridHomeUi>(renderer);
     if (!coverGridUi) LOG_ERR("HOME", "OOM: cover grid UI; using standard home");
   }
-  loadRecentBooks(coverGridUi ? CoverGridHomeUi::MAX_BOOKS : metrics.homeRecentBooksCount);
+  loadRecentBooks(quartzUi      ? QuartzHomeUi::MAX_BOOKS
+                  : coverGridUi ? CoverGridHomeUi::MAX_BOOKS
+                                : metrics.homeRecentBooksCount);
   hasContinueReading = !recentBooks.empty();
+  if (quartzUi) beginQuartzHome();
   if (coverGridUi) {
     fillCoverGridFromLibrary();
     resolveGridCoverPaths();
@@ -269,6 +287,7 @@ void HomeActivity::onExit() {
   Activity::onExit();
 
   coverGridUi.reset();
+  quartzUi.reset();
 
   // Free the stored cover buffer if any
   freeCoverBuffer();
@@ -347,6 +366,11 @@ void HomeActivity::loop() {
         break;
     }
   };
+
+  if (quartzUi) {
+    handleQuartzInput();
+    return;
+  }
 
   // Cover grid home splits navigation by button group (see below); the flat
   // next/previous cycle is for the classic list home only.
@@ -488,6 +512,32 @@ void HomeActivity::render(RenderLock&&) {
   const Rect content = UITheme::getInstance().getContentArea(renderer);
 
   renderer.clearScreen();
+  if (quartzUi) {
+    const auto drawQuartz = [&] {
+      renderer.clearScreen();
+      quartzUi->renderUi();
+      const auto labels = mappedInput.mapLabels(hasContinueReading ? tr(STR_RESUME) : "", tr(STR_SELECT),
+                                                tr(STR_DIR_UP), tr(STR_DIR_DOWN));
+      GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
+    };
+    drawQuartz();
+    // Slot heights are known after the first draw; make the paths point at
+    // those sizes, generate any missing thumbs, then redraw before the panel
+    // refreshes so Home paints once.
+    if (quartzUi->takeThumbSizesChanged()) {
+      quartzUi->refreshCoverPaths();
+      recentsLoaded = false;
+    }
+    if (!recentsLoaded && !recentsLoading) {
+      loadRecentCovers(0);
+      quartzUi->refreshCoverPaths();
+      drawQuartz();
+    }
+    renderer.displayBuffer(cleanInitialRefresh && !firstRenderDone ? HalDisplay::HALF_REFRESH
+                                                                   : HalDisplay::FAST_REFRESH);
+    firstRenderDone = true;
+    return;
+  }
   if (coverGridUi) {
     const auto drawGrid = [&] {
       renderer.clearScreen();
@@ -607,3 +657,60 @@ void HomeActivity::onFileTransferOpen() { activityManager.goToFileTransfer(); }
 void HomeActivity::onOpdsBrowserOpen() { activityManager.goToBrowser(); }
 
 void HomeActivity::onPluginsOpen() { activityManager.goToPlugins(); }
+
+void HomeActivity::beginQuartzHome() {
+  QuartzHomeUi::CurrentBook current;
+  if (!recentBooks.empty()) {
+    const std::string& path = recentBooks.front().path;
+    current.shelf = QuartzHomeUi::shelfForPath(path);
+    const int progress = loadBookProgress(path);
+    current.progressPercent = progress >= 0 ? static_cast<float>(progress) : -1.0f;
+    const BookReadingStats stats = readingstats::peekBook(path);
+    current.readingSeconds = stats.totalReadingSeconds;
+    current.timeLeftSeconds = stats.isCompleted ? 0 : stats.estimatedTimeLeftSeconds;
+  }
+  quartzUi->begin(recentBooks, std::move(current), QuartzHomeUi::scanShelves());
+}
+
+bool HomeActivity::handleQuartzInput() {
+  // Back opens the book being read, as on every other Home.
+  if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
+    if (hasContinueReading && !recentBooks.empty()) onRecentBookSelected(recentBooks[0].path);
+    return true;
+  }
+  bool redraw = false;
+  const int action = quartzUi->handleInput(mappedInput, redraw);
+  if (action < 0) {
+    if (redraw) requestUpdate();
+    return redraw;
+  }
+  if (action < QuartzHomeUi::MAX_BOOKS) {
+    if (action < static_cast<int>(recentBooks.size())) onRecentBookSelected(recentBooks[action].path);
+  } else if (action >= QuartzHomeUi::SHELF_BASE) {
+    const auto shelves = QuartzHomeUi::scanShelves();
+    const size_t index = static_cast<size_t>(action - QuartzHomeUi::SHELF_BASE);
+    if (index < shelves.size())
+      activityManager.goToFileBrowser(std::string(QuartzHomeUi::SHELF_ROOT) + "/" + shelves[index]);
+  } else {
+    switch (action) {
+      case QuartzHomeUi::ACTION_STATS:
+        activityManager.goToReadingStats();
+        break;
+      case QuartzHomeUi::ACTION_SETTINGS:
+        onSettingsOpen();
+        break;
+      case QuartzHomeUi::ACTION_FILES:
+        onFileBrowserOpen();
+        break;
+      case QuartzHomeUi::ACTION_LIBRARY:
+        onLibraryOpen();
+        break;
+      case QuartzHomeUi::ACTION_TRANSFER:
+        onFileTransferOpen();
+        break;
+      default:
+        break;
+    }
+  }
+  return true;
+}

@@ -28,6 +28,8 @@ void drawTitleBar(const GfxRenderer& renderer, const Rect& band, const char* tit
 // Battery icon and percentage in white for a black bar, right edge at `right`,
 // centered on `centerY`. Honors Hide Battery %. Returns the width used.
 int drawBatteryOnBlack(const GfxRenderer& renderer, int right, int centerY);
+// The width drawBatteryOnBlack would use right now.
+int batteryOnBlackWidth(const GfxRenderer& renderer);
 
 // Outlined, rounded list rows; the selected row fills black with white text.
 freeink::ui::StyleSet rowStyles();

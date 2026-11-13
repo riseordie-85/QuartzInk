@@ -22,31 +22,44 @@ namespace QuartzChrome {
 
 bool active() { return SETTINGS.uiTheme == CrossPointSettings::UI_THEME::QUARTZ; }
 
+namespace {
+constexpr int BATTERY_ICON_W = 22;
+constexpr int BATTERY_ICON_H = 12;
+constexpr int BATTERY_GAP = 5;
+
+bool showBatteryPercent() { return SETTINGS.hideBatteryPercentage != CrossPointSettings::HIDE_ALWAYS; }
+
+void formatBatteryPercent(char* text, const size_t len) {
+  std::snprintf(text, len, "%u%%", static_cast<unsigned>(powerManager.getBatteryPercentage()));
+}
+}  // namespace
+
+int batteryOnBlackWidth(const GfxRenderer& renderer) {
+  if (!showBatteryPercent()) return BATTERY_ICON_W;
+  char text[8];
+  formatBatteryPercent(text, sizeof(text));
+  return BATTERY_ICON_W + BATTERY_GAP + renderer.getTextWidth(SMALL_FONT_ID, text);
+}
+
 int drawBatteryOnBlack(const GfxRenderer& renderer, const int right, const int centerY) {
   const uint16_t percent = powerManager.getBatteryPercentage();
-  const bool showPercent = SETTINGS.hideBatteryPercentage != CrossPointSettings::HIDE_ALWAYS;
-  constexpr int ICON_W = 22;
-  constexpr int ICON_H = 12;
-  constexpr int GAP = 5;
 
   // Icon: white outline with a nub, filled to the charge level.
-  const int iconX = right - ICON_W;
-  const int iconY = centerY - ICON_H / 2;
-  renderer.drawRect(iconX, iconY, ICON_W - 2, ICON_H, false);
-  renderer.fillRect(iconX + ICON_W - 2, iconY + 3, 2, ICON_H - 6, false);
-  const int fillW = std::clamp<int>((ICON_W - 6) * percent / 100 + 1, 1, ICON_W - 6);
-  renderer.fillRect(iconX + 2, iconY + 2, fillW, ICON_H - 4, false);
+  const int iconX = right - BATTERY_ICON_W;
+  const int iconY = centerY - BATTERY_ICON_H / 2;
+  renderer.drawRect(iconX, iconY, BATTERY_ICON_W - 2, BATTERY_ICON_H, false);
+  renderer.fillRect(iconX + BATTERY_ICON_W - 2, iconY + 3, 2, BATTERY_ICON_H - 6, false);
+  const int fillW = std::clamp<int>((BATTERY_ICON_W - 6) * percent / 100 + 1, 1, BATTERY_ICON_W - 6);
+  renderer.fillRect(iconX + 2, iconY + 2, fillW, BATTERY_ICON_H - 4, false);
 
-  int width = ICON_W;
-  if (showPercent) {
+  if (showBatteryPercent()) {
     char text[8];
-    std::snprintf(text, sizeof(text), "%u%%", static_cast<unsigned>(percent));
+    formatBatteryPercent(text, sizeof(text));
     const int textW = renderer.getTextWidth(SMALL_FONT_ID, text);
-    renderer.drawText(SMALL_FONT_ID, iconX - GAP - textW, centerY - renderer.getLineHeight(SMALL_FONT_ID) / 2, text,
-                      false);
-    width += GAP + textW;
+    renderer.drawText(SMALL_FONT_ID, iconX - BATTERY_GAP - textW, centerY - renderer.getLineHeight(SMALL_FONT_ID) / 2,
+                      text, false);
   }
-  return width;
+  return batteryOnBlackWidth(renderer);
 }
 
 void drawTitleBar(const GfxRenderer& renderer, const Rect& band, const char* title, const bool backArrow,
