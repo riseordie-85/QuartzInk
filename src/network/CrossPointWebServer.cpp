@@ -44,6 +44,7 @@
 #include "ProtectedPaths.h"
 #include "SdCardFontSystem.h"
 #include "SettingsList.h"
+#include "StatsExport.h"
 #include "WebDAVHandler.h"
 #include "WifiCredentialStore.h"
 #include "WifiPowerSaveGuard.h"
@@ -321,6 +322,7 @@ class CrossPointWebServer::RouteHandler final : public RequestHandler {
          nullptr},
 
         {"/api/status", HTTP_GET, [](S& s) { s.handleStatus(); }, nullptr},
+        {"/api/stats", HTTP_GET, [](S& s) { s.handleStatsExport(); }, nullptr},
         {"/api/files", HTTP_GET, [](S& s) { s.handleFileListData(); }, nullptr},
         {"/download", HTTP_GET, [](S& s) { s.handleDownload(); }, nullptr},
         {"/upload", HTTP_POST, [](S& s) { s.handleUploadPost(s.upload); }, [](S& s) { s.handleUpload(s.upload); }},
@@ -837,6 +839,48 @@ bool CrossPointWebServer::isEpubFile(const String& filename) const { return FsHe
 
 void CrossPointWebServer::handleFileList() const {
   sendStaticContent(server.get(), FilesPageHtml, sizeof(FilesPageHtml), FilesPageHtmlETag, "text/html");
+}
+
+void CrossPointWebServer::handleStatsExport() const {
+  if (server->hasArg("download")) {
+    server->sendHeader("Content-Disposition", "attachment; filename=\"quartzink-stats.json\"");
+  }
+  server->setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server->send(200, "application/json", "");
+
+  // Batch small pieces into TCP-sized sends instead of one send per value.
+  constexpr size_t BATCH_CAPACITY = 1400;
+  struct Batch {
+    WebServer* server;
+    std::unique_ptr<char[]> data;
+    size_t length = 0;
+
+    bool flush() {
+      if (length == 0) return true;
+      server->sendContent(data.get(), length);
+      length = 0;
+      return true;
+    }
+  } batch{server.get(), makeUniqueNoThrow<char[]>(BATCH_CAPACITY)};
+  if (!batch.data) LOG_ERR("WEB", "OOM: stats export batch buffer; sending unbatched");
+
+  const auto write = [](const char* data, const size_t length, void* context) {
+    auto* b = static_cast<Batch*>(context);
+    if (!b->data) {
+      b->server->sendContent(data, length);
+      return true;
+    }
+    if (b->length + length > BATCH_CAPACITY) b->flush();
+    if (length > BATCH_CAPACITY) {
+      b->server->sendContent(data, length);
+      return true;
+    }
+    std::memcpy(b->data.get() + b->length, data, length);
+    b->length += length;
+    return true;
+  };
+  stats_export::writeStatsJson(write, &batch);
+  batch.flush();
 }
 
 void CrossPointWebServer::handleFileListData() const {

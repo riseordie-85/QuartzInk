@@ -18,6 +18,7 @@
 #include "RecentBooksStore.h"
 #include "SdCardFontSystem.h"
 #include "XtcReaderActivity.h"
+#include "stats/ReadingStatsRecorder.h"
 #include "util/PluginEvents.h"
 
 ReaderActivity::ReaderActivity(const char* name, GfxRenderer& renderer, MappedInputManager& mappedInput,
@@ -85,6 +86,10 @@ void ReaderActivity::onEnter() {
 }
 
 void ReaderActivity::rememberBookOnceRendered() {
+  if (!finishRecorded && finishPending.exchange(false, std::memory_order_acq_rel)) {
+    finishRecorded = true;
+    readingstats::markFinished(bookPath, getStatsCachePath(), getBookTitle());
+  }
   if (bookRemembered || !pageRendered.load(std::memory_order_acquire)) return;
   bookRemembered = true;
   APP_STATE.openEpubPath = bookPath;
@@ -129,6 +134,15 @@ void ReaderActivity::onExit() {
 void ReaderActivity::prepareForSleep() { flushReaderSession(); }
 
 void ReaderActivity::flushReaderSession() {
+  if (readerSession.isEmitWorthy()) {
+    readingstats::Session stats;
+    stats.seconds = readerSession.durationSeconds();
+    stats.pages = readerSession.pagesRead();
+    stats.startEpoch = readerSession.startTime();
+    stats.endProgressBp = readerSession.endProgressBp();
+    readingstats::commitSession(bookPath, getStatsCachePath(), stats);
+  }
+
   if (!readerSession.isEmitWorthy() || !pluginevents::anySubscriber(pluginevents::Event::ReaderSession)) {
     readerSession.reset();
     return;
@@ -258,6 +272,7 @@ void ReaderActivity::render(RenderLock&&) {
       endOfBookOptions->render(renderer, mappedInput);
     }
     renderer.displayBuffer();
+    finishPending.store(true, std::memory_order_release);
     onEndOfBookRendered();
     markPageRendered();
     readerSession.onRenderComplete(millis(), trustedtime::trustedNow(), getProgressBasisPoints());

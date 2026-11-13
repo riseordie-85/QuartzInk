@@ -27,7 +27,7 @@
 #include "fontIds.h"
 
 int HomeActivity::getMenuItemCount() const {
-  int count = 4;  // File Browser, Library, File transfer, Settings
+  int count = showsStatsItem() ? 5 : 4;  // File Browser, Library, [Reading Stats,] File transfer, Settings
   if (!recentBooks.empty()) {
     count += recentBooks.size();
   }
@@ -258,7 +258,8 @@ void HomeActivity::onEnter() {
   }
 
   const auto base = static_cast<int>(recentBooks.size());
-  selectorIndex = initialMenuItem == HomeMenuItem::NONE ? 0 : base + menuItemToIndex(initialMenuItem, slotItem());
+  selectorIndex =
+      initialMenuItem == HomeMenuItem::NONE ? 0 : base + menuItemToIndex(initialMenuItem, slotItem(), showsStatsItem());
 
   // Trigger first update
   requestUpdate();
@@ -320,12 +321,15 @@ void HomeActivity::loop() {
       return;
     }
     const int menuIndex = selectorIndex - static_cast<int>(recentBooks.size());
-    switch (indexToMenuItem(menuIndex, slotItem())) {
+    switch (indexToMenuItem(menuIndex, slotItem(), showsStatsItem())) {
       case HomeMenuItem::FILE_BROWSER:
         onFileBrowserOpen();
         break;
       case HomeMenuItem::LIBRARY:
         onLibraryOpen();
+        break;
+      case HomeMenuItem::READING_STATS:
+        activityManager.goToReadingStats();
         break;
       case HomeMenuItem::PLUGINS:
         onPluginsOpen();
@@ -549,13 +553,13 @@ void HomeActivity::render(RenderLock&&) {
                           std::bind(&HomeActivity::storeCoverBuffer, this));
 
   // Build menu items dynamically
-  std::vector<const char*> menuItems = {tr(STR_BROWSE_FILES), tr(STR_LIBRARY), tr(STR_FILE_TRANSFER),
-                                        tr(STR_SETTINGS_TITLE)};
-  std::vector<UIIcon> menuIcons = {Folder, Library, Transfer, Settings};
+  std::vector<const char*> menuItems = {tr(STR_BROWSE_FILES), tr(STR_LIBRARY), tr(STR_READING_STATS),
+                                        tr(STR_FILE_TRANSFER), tr(STR_SETTINGS_TITLE)};
+  std::vector<UIIcon> menuIcons = {Folder, Library, Recent, Transfer, Settings};
 
   if (slotItem() != HomeMenuItem::NONE) {
-    menuItems.insert(menuItems.begin() + 2, hasPlugins ? tr(STR_PLUGINS) : tr(STR_OPDS_BROWSER));
-    menuIcons.insert(menuIcons.begin() + 2, hasPlugins ? Plugins : Book);
+    menuItems.insert(menuItems.begin() + 3, hasPlugins ? tr(STR_PLUGINS) : tr(STR_OPDS_BROWSER));
+    menuIcons.insert(menuIcons.begin() + 3, hasPlugins ? Plugins : Book);
   }
 
   if (metrics.homeContinueReadingInMenu && !recentBooks.empty()) {

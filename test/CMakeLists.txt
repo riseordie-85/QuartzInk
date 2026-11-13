@@ -90,6 +90,7 @@ add_subdirectory(clipping_preview)
 add_subdirectory(glyph_bitmap)
 
 add_subdirectory(clipping_store)
+add_subdirectory(reading_stats_logs)
 add_subdirectory(reader_session)
 add_subdirectory(plugin_catalog_paging)
 add_subdirectory(plugin_manifest_classification)

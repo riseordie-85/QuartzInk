@@ -19,9 +19,10 @@ class HomeActivity final : public Activity {
   bool firstRenderDone = false;
   bool hasOpdsServers = false;
   bool hasPlugins = false;
-  // The home "library" slot (index 2) shows Plugins while the plugin system is
+  // The home "library" slot (index 3) shows Plugins while the plugin system is
   // enabled, otherwise OPDS when a server is configured. NONE hides the slot.
   // NetworkModeSelectionActivity lists OPDS in exactly the other cases.
+  bool showsStatsItem() const { return !coverGridUi; }
   HomeMenuItem slotItem() const {
     if (hasPlugins) return HomeMenuItem::PLUGINS;
     return hasOpdsServers ? HomeMenuItem::OPDS_BROWSER : HomeMenuItem::NONE;
@@ -45,12 +46,16 @@ class HomeActivity final : public Activity {
   const bool cleanInitialRefresh;
 
   // Convert HomeMenuItem to menu index (used in onEnter)
-  static int menuItemToIndex(HomeMenuItem item, HomeMenuItem slot) {
+  // `stats`: the list home shows Reading Stats after Library; the cover grid's
+  // fixed tab bar does not, so its indices skip it.
+  static int menuItemToIndex(HomeMenuItem item, HomeMenuItem slot, bool stats) {
     int i = 0;
     if (item == HomeMenuItem::FILE_BROWSER) return i;
     ++i;
     if (item == HomeMenuItem::LIBRARY) return i;
     ++i;
+    if (stats && item == HomeMenuItem::READING_STATS) return i;
+    if (stats) ++i;
     if (slot != HomeMenuItem::NONE && item == slot) return i;
     if (item == HomeMenuItem::PLUGINS) return 0;
     if (slot != HomeMenuItem::NONE) ++i;
@@ -62,10 +67,11 @@ class HomeActivity final : public Activity {
   }
 
   // Convert menu index to HomeMenuItem (used in loop)
-  static HomeMenuItem indexToMenuItem(int idx, HomeMenuItem slot) {
+  static HomeMenuItem indexToMenuItem(int idx, HomeMenuItem slot, bool stats) {
     int i = 0;
     if (idx == i++) return HomeMenuItem::FILE_BROWSER;
     if (idx == i++) return HomeMenuItem::LIBRARY;
+    if (stats && idx == i++) return HomeMenuItem::READING_STATS;
     if (slot != HomeMenuItem::NONE && idx == i++) return slot;
     if (idx == i++) return HomeMenuItem::FILE_TRANSFER;
     if (idx == i) return HomeMenuItem::SETTINGS_MENU;

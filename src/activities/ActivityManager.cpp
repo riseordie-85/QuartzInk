@@ -15,6 +15,7 @@
 #include "CrossPointSettings.h"
 #include "HapticFeedback.h"
 #include "OpdsServerStore.h"
+#include "activities/stats/ReadingStatsActivity.h"
 #include "boot_sleep/BootActivity.h"
 #include "boot_sleep/SleepActivity.h"
 #include "browser/OpdsBookBrowserActivity.h"
@@ -301,6 +302,15 @@ void ActivityManager::goToFileBrowser(std::string path) {
   replaceActivity(std::make_unique<FileBrowserActivity>(renderer, mappedInput, std::move(path)));
 }
 
+void ActivityManager::goToReadingStats() {
+  auto activity = makeUniqueNoThrow<ReadingStatsActivity>(renderer, mappedInput);
+  if (!activity) {
+    LOG_ERR("ACT", "OOM: reading stats activity");
+    return;
+  }
+  replaceActivity(std::move(activity));
+}
+
 void ActivityManager::goToLibrary() {
   auto activity = makeUniqueNoThrow<LibraryListActivity>(renderer, mappedInput);
   if (!activity) {
@@ -365,6 +375,8 @@ void ActivityManager::goHome(HomeMenuItem initialMenuItem, bool cleanInitialRefr
       initialMenuItem = HomeMenuItem::FILE_BROWSER;
     } else if (activityName == "Library") {
       initialMenuItem = HomeMenuItem::LIBRARY;
+    } else if (activityName == "ReadingStats") {
+      initialMenuItem = HomeMenuItem::READING_STATS;
     } else if (activityName == "PluginCatalog") {
       initialMenuItem = HomeMenuItem::PLUGINS;
     } else if (activityName == "OpdsBookBrowser") {

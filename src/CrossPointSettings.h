@@ -369,6 +369,9 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   char dictionaryName[32] = "";
   // Save successful dictionary lookups to vocabulary history (default off).
   uint8_t vocabularyHistoryEnabled = 0;
+  // QuartzInk reading stats: time, pages, streaks and finished books per reader.
+  uint8_t trackReadingStats = 1;
+  bool shouldTrackReadingStats() const { return trackReadingStats != 0; }
   // Master switch for all SD-card plugin discovery/execution. New installs keep
   // this disabled; settings migration enables it when pre-existing plugin files
   // are found so a firmware update never silently disables an existing setup.

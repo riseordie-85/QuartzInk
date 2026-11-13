@@ -22,6 +22,10 @@ class ReaderActivity : public Activity {
   ReaderSession readerSession;
   std::atomic<bool> pageRendered{false};
   bool bookRemembered = false;
+  // Set by render() at the end of the book; the main loop records the finish,
+  // keeping SD writes off the render task.
+  std::atomic<bool> finishPending{false};
+  bool finishRecorded = false;
   void markPageRendered() { pageRendered.store(true, std::memory_order_release); }
   void rememberBookOnceRendered();
 
@@ -35,6 +39,8 @@ class ReaderActivity : public Activity {
   virtual std::string getBookTitle() const = 0;
   virtual std::string getBookAuthor() const { return ""; }
   virtual std::string getBookThumbBmpPath() const { return ""; }
+  // Book cache folder that holds this book's reading stats; empty disables stats.
+  virtual std::string getStatsCachePath() const { return ""; }
   // Whole-book progress for the reader.exit plugin event, reusing the
   // per-reader ScreenshotInfo implementations.
   //
