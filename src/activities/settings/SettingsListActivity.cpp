@@ -8,6 +8,7 @@
 
 #include "MappedInputManager.h"
 #include "SettingsActivity.h"
+#include "WallpapersActivity.h"
 #include "components/UITheme.h"
 #include "components/UiAppHelpers.h"
 
@@ -48,12 +49,23 @@ void SettingsListActivity::loop() {
 // Rebuilds row labels; call when entering and after a section returns (the
 // UI language may have changed).
 void SettingsListActivity::rebuildRows() {
-  for (size_t i = 0; i < SETTINGS_SECTION_COUNT; ++i) {
-    auto& item = rowItems_[i];
-    item.label = I18N.get(SETTINGS_SECTION_TITLES[i]);
-    item.icon = fui::bitmapFromIcon(*SECTION_ICONS[i]);
-    item.actionValue = static_cast<int16_t>(i);
+  for (int row = 0; row < ROW_COUNT; ++row) {
+    auto& item = rowItems_[row];
+    if (row == WALLPAPERS_ROW) {
+      item.label = tr(STR_QZ_WALLPAPERS);
+      item.icon = fui::bitmapFromIcon(icon_image_32);
+    } else {
+      const size_t section = static_cast<size_t>(row < WALLPAPERS_ROW ? row : row - 1);
+      item.label = I18N.get(SETTINGS_SECTION_TITLES[section]);
+      item.icon = fui::bitmapFromIcon(*SECTION_ICONS[section]);
+    }
+    item.actionValue = static_cast<int16_t>(row);
   }
+}
+
+int SettingsListActivity::rowForSection(const SettingsSection section) {
+  const int index = static_cast<int>(section);
+  return index < WALLPAPERS_ROW ? index : index + 1;
 }
 
 void SettingsListActivity::buildScreen(UiScreen& screen) {
@@ -82,11 +94,28 @@ void SettingsListActivity::activateIndex(const int index) {
   // The section screen replaces this one; a lingering flash would gray an
   // unrelated element on return.
   app.clearTapFlash();
-  openSection(static_cast<SettingsSection>(index));
+  if (index == WALLPAPERS_ROW) {
+    openWallpapers();
+    return;
+  }
+  openSection(static_cast<SettingsSection>(index < WALLPAPERS_ROW ? index : index - 1));
+}
+
+void SettingsListActivity::openWallpapers() {
+  nav.selected = WALLPAPERS_ROW;
+  auto activity = makeUniqueNoThrow<WallpapersActivity>(renderer, mappedInput);
+  if (!activity) {
+    LOG_ERR("SETTINGS", "OOM: WallpapersActivity");
+    return;
+  }
+  startActivityForResult(std::move(activity), [this](const ActivityResult&) {
+    resetUi();
+    requestUpdate();
+  });
 }
 
 void SettingsListActivity::openSection(const SettingsSection section) {
-  nav.selected = static_cast<int>(section);
+  nav.selected = rowForSection(section);
   auto activity = makeUniqueNoThrow<SettingsActivity>(renderer, mappedInput, section);
   if (!activity) {
     LOG_ERR("SETTINGS", "OOM: SettingsActivity");

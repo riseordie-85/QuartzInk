@@ -32,6 +32,7 @@
 #include "fontIds.h"
 #include "images/MoonIcon.h"
 #include "images/QuartzLogo.h"
+#include "util/SleepImages.h"
 
 namespace {
 // Metalio: B/W sleep images use the full 0xF7 waveform instead of HALF (two
@@ -72,17 +73,12 @@ constexpr char TRANSPARENT_SLEEP_DIR[] = "/.sleep-overlay";
 constexpr char TRANSPARENT_SLEEP_LEGACY_DIR[] = "/sleep-overlay";
 
 // QuartzInk's pinned sleep image (APP_STATE.pinnedSleepImage), when it still
-// exists and belongs to the requested kind: overlay-folder files for the
-// overlay modes, everything else for Custom.
+// exists and belongs to the requested kind (util/SleepImages.h).
 bool pinnedSleepImage(const bool overlay, std::string& out) {
   const std::string& pinned = APP_STATE.pinnedSleepImage;
-  if (pinned.empty() || !Storage.exists(pinned.c_str())) return false;
-  const auto under = [&pinned](const char* dir) {
-    const size_t n = std::strlen(dir);
-    return pinned.size() > n + 1 && strncasecmp(pinned.c_str(), dir, n) == 0 && pinned[n] == '/';
-  };
-  const bool inOverlayFolder = under(TRANSPARENT_SLEEP_DIR) || under(TRANSPARENT_SLEEP_LEGACY_DIR);
-  if (inOverlayFolder != overlay) return false;
+  sleepimages::Kind kind;
+  if (pinned.empty() || !sleepimages::kindOf(pinned, kind)) return false;
+  if ((kind == sleepimages::Kind::Overlay) != overlay || !Storage.exists(pinned.c_str())) return false;
   out = pinned;
   return true;
 }

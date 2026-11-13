@@ -72,6 +72,7 @@
 #include "util/FirmwareIdentity.h"
 #include "util/PluginHttp.h"
 #include "util/PluginLocations.h"
+#include "util/SleepImages.h"
 #include "util/TaskWatchdog.h"
 #include "util/UrlUtils.h"
 
@@ -729,31 +730,11 @@ void CrossPointWebServer::handleWallpapersPage() const {
 }
 
 namespace {
-// Sleep image folders, as SleepActivity reads them: Custom takes BMPs from the
-// wallpaper folders; the overlay modes take BMPs or PNGs from the overlay
-// folders. Uploads go to the first (dot) folder of each pair.
-constexpr const char* WALLPAPER_DIRS[] = {"/.sleep", "/sleep"};
-constexpr const char* OVERLAY_DIRS[] = {"/.sleep-overlay", "/sleep-overlay"};
-
 bool isDirectory(const char* path) {
   HalFile dir = Storage.open(path);
   const bool result = dir && dir.isDirectory();
   if (dir) dir.close();
   return result;
-}
-
-// True when `path` is a file directly inside one of `dirs` (FAT names are
-// case-insensitive; the device does not look in subfolders).
-template <size_t N>
-bool directlyInside(const String& path, const char* const (&dirs)[N]) {
-  for (const char* dir : dirs) {
-    const size_t n = strlen(dir);
-    if (path.length() > n + 1 && strncasecmp(path.c_str(), dir, n) == 0 && path[n] == '/' &&
-        path.indexOf('/', n + 1) < 0) {
-      return true;
-    }
-  }
-  return false;
 }
 
 template <size_t N>
@@ -763,14 +744,6 @@ void addFolders(JsonObject group, const char* const (&dirs)[N]) {
   for (const char* dir : dirs) {
     if (isDirectory(dir)) folders.add(dir);
   }
-}
-
-bool isOverlayMode(const uint8_t mode) {
-  return mode == CrossPointSettings::TRANSPARENT_CUSTOM || mode == CrossPointSettings::COVER_TRANSPARENT;
-}
-
-bool isWallpaperMode(const uint8_t mode) {
-  return mode == CrossPointSettings::CUSTOM || mode == CrossPointSettings::COVER_CUSTOM;
 }
 }  // namespace
 
@@ -784,43 +757,27 @@ void CrossPointWebServer::handleWallpaperInfo() const {
   JsonObject screen = doc["screen"].to<JsonObject>();
   screen["width"] = std::min(w, h);
   screen["height"] = std::max(w, h);
-  addFolders(doc["wallpapers"].to<JsonObject>(), WALLPAPER_DIRS);
-  addFolders(doc["overlays"].to<JsonObject>(), OVERLAY_DIRS);
+  addFolders(doc["wallpapers"].to<JsonObject>(), sleepimages::WALLPAPER_DIRS);
+  addFolders(doc["overlays"].to<JsonObject>(), sleepimages::OVERLAY_DIRS);
   String json;
   serializeJson(doc, json);
   server->send(200, "application/json", json);
 }
 
 void CrossPointWebServer::handleWallpaperPin() const {
-  const String path = server->hasArg("path") ? normalizeWebPath(server->arg("path")) : String();
-  uint8_t mode = SETTINGS.sleepScreen;
-  if (path.isEmpty() || path == "/") {
-    APP_STATE.pinnedSleepImage.clear();
-  } else {
-    const bool overlay = directlyInside(path, OVERLAY_DIRS);
-    const bool wallpaper = directlyInside(path, WALLPAPER_DIRS);
-    const bool bmp = FsHelpers::hasBmpExtension(path.c_str());
-    const bool usable = (overlay && (bmp || FsHelpers::hasPngExtension(path))) || (wallpaper && bmp);
-    if (!usable || !Storage.exists(path.c_str())) {
+  const String arg = server->hasArg("path") ? normalizeWebPath(server->arg("path")) : String();
+  const std::string path = (arg.isEmpty() || arg == "/") ? std::string() : std::string(arg.c_str());
+  switch (sleepimages::pin(path)) {
+    case sleepimages::PinResult::Ok:
+      handleWallpaperInfo();
+      return;
+    case sleepimages::PinResult::NotUsable:
       server->send(400, "text/plain", "Choose a wallpaper BMP or an overlay image on the card");
       return;
-    }
-    APP_STATE.pinnedSleepImage = path.c_str();
-    // As on the device, the pin only shows in a mode that reads its folder.
-    if (overlay && !isOverlayMode(mode)) mode = CrossPointSettings::TRANSPARENT_CUSTOM;
-    if (wallpaper && !isWallpaperMode(mode)) mode = CrossPointSettings::CUSTOM;
+    case sleepimages::PinResult::SaveFailed:
+      server->send(500, "text/plain", "Could not save the sleep image");
+      return;
   }
-  if (mode != SETTINGS.sleepScreen) {
-    SETTINGS.sleepScreen = mode;
-    if (!SETTINGS.saveToFile()) LOG_ERR("WEB", "Failed to save sleep screen %u for pinned image", mode);
-  }
-  if (!APP_STATE.saveToFile()) {
-    LOG_ERR("WEB", "Failed to save pinned sleep image %s", path.c_str());
-    server->send(500, "text/plain", "Could not save the sleep image");
-    return;
-  }
-  LOG_INF("WEB", "Pinned sleep image: %s", APP_STATE.pinnedSleepImage.c_str());
-  handleWallpaperInfo();
 }
 
 void CrossPointWebServer::handleWallpaperMode() const {
@@ -842,7 +799,9 @@ void CrossPointWebServer::handleWallpaperMode() const {
 // because /mkdir rightly refuses dot-named folders.
 void CrossPointWebServer::handleWallpaperFolder() const {
   const String kind = server->hasArg("kind") ? server->arg("kind") : String();
-  const char* dir = kind == "overlays" ? OVERLAY_DIRS[0] : kind == "wallpapers" ? WALLPAPER_DIRS[0] : nullptr;
+  const char* dir = kind == "overlays"     ? sleepimages::uploadDir(sleepimages::Kind::Overlay)
+                    : kind == "wallpapers" ? sleepimages::uploadDir(sleepimages::Kind::Wallpaper)
+                                           : nullptr;
   if (!dir) {
     server->send(400, "text/plain", "Unknown wallpaper folder");
     return;

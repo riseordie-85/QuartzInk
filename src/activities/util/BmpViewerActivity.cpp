@@ -13,9 +13,11 @@
 #include <algorithm>
 
 #include "CrossPointSettings.h"
+#include "CrossPointState.h"
 #include "activities/util/ConfirmationActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
+#include "util/SleepImages.h"
 
 namespace {
 constexpr char CUSTOM_SLEEP_ROOT_BMP[] = "/sleep.bmp";
@@ -44,8 +46,9 @@ bool overlaySleepMode() {
 }
 }  // namespace
 
-BmpViewerActivity::BmpViewerActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, std::string path)
-    : Activity("BmpViewer", renderer, mappedInput), filePath(std::move(path)) {}
+BmpViewerActivity::BmpViewerActivity(GfxRenderer& renderer, MappedInputManager& mappedInput, std::string path,
+                                     const bool returnOnBack)
+    : Activity("BmpViewer", renderer, mappedInput), filePath(std::move(path)), returnOnBack(returnOnBack) {}
 
 void BmpViewerActivity::loadSiblingImages() {
   siblingImages.clear();
@@ -104,6 +107,27 @@ bool BmpViewerActivity::canSetSleepCover() const {
          (overlaySleepMode() && FsHelpers::hasPngExtension(filePath));
 }
 
+bool BmpViewerActivity::inSleepFolder() const {
+  sleepimages::Kind kind;
+  const size_t slash = filePath.find_last_of('/');
+  return sleepimages::kindOf(filePath, kind) &&
+         sleepimages::usableName(std::string_view{filePath}.substr(slash == std::string::npos ? 0 : slash + 1), kind);
+}
+
+const char* BmpViewerActivity::confirmLabel() const {
+  if (inSleepFolder()) return sleepimages::isPinned(filePath) ? tr(STR_QZ_UNPIN) : tr(STR_QZ_USE);
+  return canSetSleepCover() ? tr(STR_SET_SLEEP_COVER) : "";
+}
+
+// Pins (or unpins) the image shown; pin() switches to a sleep mode that shows it.
+void BmpViewerActivity::togglePin() {
+  const bool ok =
+      sleepimages::pin(sleepimages::isPinned(filePath) ? std::string() : filePath) == sleepimages::PinResult::Ok;
+  GUI.drawPopup(renderer, ok ? tr(STR_DONE) : tr(STR_FAILED_LOWER));
+  delay(700);
+  onEnter();
+}
+
 bool BmpViewerActivity::renderImage() {
   const bool jpeg = FsHelpers::hasJpgExtension(filePath);
   JpegToFramebufferConverter jpegDecoder;
@@ -118,8 +142,7 @@ bool BmpViewerActivity::renderImage() {
   const bool hasPrevious = siblingImages.size() > 1 && currentImageIndex > 0;
   const bool hasNext = siblingImages.size() > 1 && currentImageIndex != -1 &&
                        currentImageIndex < static_cast<int>(siblingImages.size()) - 1;
-  const auto labels = mappedInput.mapLabels(tr(STR_BACK), canSetSleepCover() ? tr(STR_SET_SLEEP_COVER) : "",
-                                            hasPrevious ? "<" : "", hasNext ? ">" : "");
+  const auto labels = mappedInput.mapLabels(tr(STR_BACK), confirmLabel(), hasPrevious ? "<" : "", hasNext ? ">" : "");
   const auto drawImage = [&]() {
     if (!decoder.decodeToFramebuffer(filePath, renderer, config)) return false;
     GUI.drawButtonHints(renderer, labels.btn1, labels.btn2, labels.btn3, labels.btn4);
@@ -217,8 +240,8 @@ void BmpViewerActivity::onEnter() {
       bool hasNext = (siblingImages.size() > 1 && currentImageIndex != -1 &&
                       currentImageIndex < static_cast<int>(siblingImages.size()) - 1);
 
-      const auto labels = mappedInput.mapLabels(tr(STR_BACK), canSetSleepCover() ? tr(STR_SET_SLEEP_COVER) : "",
-                                                (hasPrevious ? "<" : ""), (hasNext ? ">" : ""));
+      const auto labels =
+          mappedInput.mapLabels(tr(STR_BACK), confirmLabel(), (hasPrevious ? "<" : ""), (hasNext ? ">" : ""));
 
       GUI.fillPopupProgress(renderer, popupRect, 50);
 
@@ -429,6 +452,11 @@ void BmpViewerActivity::doSetSleepCover() {
 
   if (success) {
     if (!transparentMode) SETTINGS.sleepScreen = CrossPointSettings::SLEEP_SCREEN_MODE::CUSTOM;
+    // A pin is drawn before the root sleep image, so the copy only shows once it is cleared.
+    if (!APP_STATE.pinnedSleepImage.empty()) {
+      APP_STATE.pinnedSleepImage.clear();
+      if (!APP_STATE.saveToFile()) LOG_ERR("BMP", "Failed to clear pinned sleep image");
+    }
     SETTINGS.saveToFile();
     GUI.drawPopup(renderer, tr(STR_DONE));
   } else {
@@ -460,7 +488,11 @@ void BmpViewerActivity::loop() {
   };
 
   if (mappedInput.wasReleased(MappedInputManager::Button::Back)) {
-    activityManager.goToFileBrowser(filePath);
+    if (returnOnBack) {
+      finish();
+    } else {
+      activityManager.goToFileBrowser(filePath);
+    }
     return;
   }
 
@@ -478,6 +510,10 @@ void BmpViewerActivity::loop() {
   int touchX = 0;
   int touchY = 0;
   if (mappedInput.wasReleased(MappedInputManager::Button::Confirm) || mappedInput.wasScreenLongPress(touchX, touchY)) {
+    if (inSleepFolder()) {
+      togglePin();
+      return;
+    }
     if (!canSetSleepCover()) return;
 
     auto confirmation = makeUniqueNoThrow<ConfirmationActivity>(renderer, mappedInput, tr(STR_SET_SLEEP_COVER_CONFIRM),
