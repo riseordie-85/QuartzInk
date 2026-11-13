@@ -108,6 +108,13 @@ class CrossPointWebServer {
   void handleStatus() const;
   // QuartzInk reading stats as JSON (docs/stats-export.md); ?download=1 saves a file.
   void handleStatsExport() const;
+  // QuartzInk dashboard pages and the sleep wallpaper API behind Wallpapers.
+  void handleStatsPage() const;
+  void handleWallpapersPage() const;
+  void handleWallpaperInfo() const;
+  void handleWallpaperPin() const;
+  void handleWallpaperMode() const;
+  void handleWallpaperFolder() const;
   void handleFileList() const;
   void handleFileListData() const;
   void handleDownload() const;

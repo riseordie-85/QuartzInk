@@ -6,6 +6,7 @@
 #include <Crypto.h>
 #include <DeviceSecret.h>
 #include <FsHelpers.h>
+#include <HalDisplay.h>
 #include <HalGPIO.h>
 #include <HalMemory.h>
 #include <HalStorage.h>
@@ -39,6 +40,7 @@
 
 #include "ClippingStore.h"
 #include "CrossPointSettings.h"
+#include "CrossPointState.h"
 #include "FontInstaller.h"
 #include "OpdsServerStore.h"
 #include "ProtectedPaths.h"
@@ -54,8 +56,13 @@
 #include "html/PluginsPageHtml.generated.h"
 #include "html/RunnerPageHtml.generated.h"
 #include "html/SettingsPageHtml.generated.h"
+#include "html/StatsPageHtml.generated.h"
+#include "html/WallpapersPageHtml.generated.h"
 #include "html/assets/crosspoint_iconSvg.generated.h"
 #include "html/assets/iconsSvg.generated.h"
+#include "html/assets/jostWoff2.generated.h"
+#include "html/assets/jost_boldWoff2.generated.h"
+#include "html/assets/logoPng.generated.h"
 #include "html/assets/webCss.generated.h"
 #include "html/js/epub_optimizerJs.generated.h"
 #include "html/js/jszip_minJs.generated.h"
@@ -321,6 +328,22 @@ class CrossPointWebServer::RouteHandler final : public RequestHandler {
          },
          nullptr},
 
+        {"/assets/logo.png", HTTP_GET,
+         [](S& s) { sendStaticContent(s.server.get(), logoPng, sizeof(logoPng), logoPngETag, "image/png"); }, nullptr},
+        {"/assets/jost.woff2", HTTP_GET,
+         [](S& s) { sendStaticContent(s.server.get(), jostWoff2, sizeof(jostWoff2), jostWoff2ETag, "font/woff2"); },
+         nullptr},
+        {"/assets/jost-bold.woff2", HTTP_GET,
+         [](S& s) {
+           sendStaticContent(s.server.get(), jost_boldWoff2, sizeof(jost_boldWoff2), jost_boldWoff2ETag, "font/woff2");
+         },
+         nullptr},
+        {"/stats", HTTP_GET, [](S& s) { s.handleStatsPage(); }, nullptr},
+        {"/wallpapers", HTTP_GET, [](S& s) { s.handleWallpapersPage(); }, nullptr},
+        {"/api/wallpapers", HTTP_GET, [](S& s) { s.handleWallpaperInfo(); }, nullptr},
+        {"/api/wallpapers/pin", HTTP_POST, [](S& s) { s.handleWallpaperPin(); }, nullptr},
+        {"/api/wallpapers/mode", HTTP_POST, [](S& s) { s.handleWallpaperMode(); }, nullptr},
+        {"/api/wallpapers/folder", HTTP_POST, [](S& s) { s.handleWallpaperFolder(); }, nullptr},
         {"/api/status", HTTP_GET, [](S& s) { s.handleStatus(); }, nullptr},
         {"/api/stats", HTTP_GET, [](S& s) { s.handleStatsExport(); }, nullptr},
         {"/api/files", HTTP_GET, [](S& s) { s.handleFileListData(); }, nullptr},
@@ -695,6 +718,141 @@ static void sendStaticContent(WebServer* server, const char* data, size_t len, c
 void CrossPointWebServer::handleRoot() const {
   sendStaticContent(server.get(), HomePageHtml, sizeof(HomePageHtml), HomePageHtmlETag, "text/html");
   LOG_DBG("WEB", "Served root page");
+}
+
+void CrossPointWebServer::handleStatsPage() const {
+  sendStaticContent(server.get(), StatsPageHtml, sizeof(StatsPageHtml), StatsPageHtmlETag, "text/html");
+}
+
+void CrossPointWebServer::handleWallpapersPage() const {
+  sendStaticContent(server.get(), WallpapersPageHtml, sizeof(WallpapersPageHtml), WallpapersPageHtmlETag, "text/html");
+}
+
+namespace {
+// Sleep image folders, as SleepActivity reads them: Custom takes BMPs from the
+// wallpaper folders; the overlay modes take BMPs or PNGs from the overlay
+// folders. Uploads go to the first (dot) folder of each pair.
+constexpr const char* WALLPAPER_DIRS[] = {"/.sleep", "/sleep"};
+constexpr const char* OVERLAY_DIRS[] = {"/.sleep-overlay", "/sleep-overlay"};
+
+bool isDirectory(const char* path) {
+  HalFile dir = Storage.open(path);
+  const bool result = dir && dir.isDirectory();
+  if (dir) dir.close();
+  return result;
+}
+
+// True when `path` is a file directly inside one of `dirs` (FAT names are
+// case-insensitive; the device does not look in subfolders).
+template <size_t N>
+bool directlyInside(const String& path, const char* const (&dirs)[N]) {
+  for (const char* dir : dirs) {
+    const size_t n = strlen(dir);
+    if (path.length() > n + 1 && strncasecmp(path.c_str(), dir, n) == 0 && path[n] == '/' &&
+        path.indexOf('/', n + 1) < 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <size_t N>
+void addFolders(JsonObject group, const char* const (&dirs)[N]) {
+  group["upload"] = dirs[0];
+  JsonArray folders = group["folders"].to<JsonArray>();
+  for (const char* dir : dirs) {
+    if (isDirectory(dir)) folders.add(dir);
+  }
+}
+
+bool isOverlayMode(const uint8_t mode) {
+  return mode == CrossPointSettings::TRANSPARENT_CUSTOM || mode == CrossPointSettings::COVER_TRANSPARENT;
+}
+
+bool isWallpaperMode(const uint8_t mode) {
+  return mode == CrossPointSettings::CUSTOM || mode == CrossPointSettings::COVER_CUSTOM;
+}
+}  // namespace
+
+void CrossPointWebServer::handleWallpaperInfo() const {
+  JsonDocument doc;
+  doc["mode"] = SETTINGS.sleepScreen;
+  doc["pinned"] = APP_STATE.pinnedSleepImage.c_str();
+  // Portrait size of the panel, for resizing photos in the browser.
+  const uint16_t w = display.getDisplayWidth();
+  const uint16_t h = display.getDisplayHeight();
+  JsonObject screen = doc["screen"].to<JsonObject>();
+  screen["width"] = std::min(w, h);
+  screen["height"] = std::max(w, h);
+  addFolders(doc["wallpapers"].to<JsonObject>(), WALLPAPER_DIRS);
+  addFolders(doc["overlays"].to<JsonObject>(), OVERLAY_DIRS);
+  String json;
+  serializeJson(doc, json);
+  server->send(200, "application/json", json);
+}
+
+void CrossPointWebServer::handleWallpaperPin() const {
+  const String path = server->hasArg("path") ? normalizeWebPath(server->arg("path")) : String();
+  uint8_t mode = SETTINGS.sleepScreen;
+  if (path.isEmpty() || path == "/") {
+    APP_STATE.pinnedSleepImage.clear();
+  } else {
+    const bool overlay = directlyInside(path, OVERLAY_DIRS);
+    const bool wallpaper = directlyInside(path, WALLPAPER_DIRS);
+    const bool bmp = FsHelpers::hasBmpExtension(path.c_str());
+    const bool usable = (overlay && (bmp || FsHelpers::hasPngExtension(path))) || (wallpaper && bmp);
+    if (!usable || !Storage.exists(path.c_str())) {
+      server->send(400, "text/plain", "Choose a wallpaper BMP or an overlay image on the card");
+      return;
+    }
+    APP_STATE.pinnedSleepImage = path.c_str();
+    // As on the device, the pin only shows in a mode that reads its folder.
+    if (overlay && !isOverlayMode(mode)) mode = CrossPointSettings::TRANSPARENT_CUSTOM;
+    if (wallpaper && !isWallpaperMode(mode)) mode = CrossPointSettings::CUSTOM;
+  }
+  if (mode != SETTINGS.sleepScreen) {
+    SETTINGS.sleepScreen = mode;
+    if (!SETTINGS.saveToFile()) LOG_ERR("WEB", "Failed to save sleep screen %u for pinned image", mode);
+  }
+  if (!APP_STATE.saveToFile()) {
+    LOG_ERR("WEB", "Failed to save pinned sleep image %s", path.c_str());
+    server->send(500, "text/plain", "Could not save the sleep image");
+    return;
+  }
+  LOG_INF("WEB", "Pinned sleep image: %s", APP_STATE.pinnedSleepImage.c_str());
+  handleWallpaperInfo();
+}
+
+void CrossPointWebServer::handleWallpaperMode() const {
+  const long mode = server->hasArg("mode") ? server->arg("mode").toInt() : -1;
+  if (mode < 0 || mode >= CrossPointSettings::SLEEP_SCREEN_MODE_COUNT) {
+    server->send(400, "text/plain", "Unknown sleep screen mode");
+    return;
+  }
+  SETTINGS.sleepScreen = static_cast<uint8_t>(mode);
+  if (!SETTINGS.saveToFile()) {
+    LOG_ERR("WEB", "Failed to save sleep screen mode %ld", mode);
+    server->send(500, "text/plain", "Could not save the sleep screen");
+    return;
+  }
+  handleWallpaperInfo();
+}
+
+// Creates /.sleep or /.sleep-overlay for the first upload. A separate route
+// because /mkdir rightly refuses dot-named folders.
+void CrossPointWebServer::handleWallpaperFolder() const {
+  const String kind = server->hasArg("kind") ? server->arg("kind") : String();
+  const char* dir = kind == "overlays" ? OVERLAY_DIRS[0] : kind == "wallpapers" ? WALLPAPER_DIRS[0] : nullptr;
+  if (!dir) {
+    server->send(400, "text/plain", "Unknown wallpaper folder");
+    return;
+  }
+  if (!isDirectory(dir) && !Storage.mkdir(dir)) {
+    LOG_ERR("WEB", "Failed to create %s", dir);
+    server->send(500, "text/plain", "Could not create the folder on the card");
+    return;
+  }
+  handleWallpaperInfo();
 }
 
 void CrossPointWebServer::handleJszip() const {

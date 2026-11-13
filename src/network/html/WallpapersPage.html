@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Wallpapers - QuartzInk</title>
+    <link rel="stylesheet" href="/assets/web.css" />
+    <link rel="icon" type="image/png" href="/assets/logo.png" />
+    <link rel="preload" href="/assets/jost.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content="#000000" />
+    <style>
+h2 {
+  font-size: 1.3em;
+  margin: 0 0 10px;
+}
+.qz-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.qz-row h2 {
+  margin: 0;
+}
+.qz-seg {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 3px solid #000;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.qz-seg button {
+  font: inherit;
+  font-weight: 700;
+  padding: 12px 6px;
+  border: none;
+  border-left: 2px solid #000;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  min-height: 48px;
+}
+.qz-seg button:first-child {
+  border-left: none;
+}
+.qz-seg button.active {
+  background: #000;
+  color: #fff;
+}
+.qz-seg-small {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: 1;
+  max-width: 360px;
+}
+.qz-seg-small button {
+  padding: 8px 6px;
+  min-height: 40px;
+}
+.qz-options {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  font-weight: 700;
+}
+.qz-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 140px;
+  padding: 16px;
+  border: 3px dashed #000;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+.qz-drop.dragging,
+.qz-drop:hover {
+  background: #f2f2f2;
+}
+.qz-drop-title {
+  font-size: 1.2em;
+  font-weight: 700;
+}
+.qz-up {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  margin-top: 12px;
+  font-size: 0.95em;
+}
+.qz-up-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qz-up-state {
+  color: var(--label-color);
+}
+.qz-up-state.error {
+  color: #b00020;
+  font-weight: 700;
+}
+.qz-up-track {
+  grid-column: 1 / -1;
+  height: 8px;
+  border: 2px solid #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.qz-up-fill {
+  height: 100%;
+  width: 0;
+  background: #000;
+}
+.qz-wall-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.qz-wall {
+  border: 3px solid #000;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.qz-wall.pinned {
+  outline: 4px solid #000;
+  outline-offset: 3px;
+}
+.qz-wall-img {
+  aspect-ratio: 3 / 5;
+  background: repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 3px solid #000;
+  color: var(--label-color);
+  font-size: 0.85em;
+}
+.qz-wall-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.qz-wall-name {
+  padding: 8px 10px 0;
+  font-weight: 700;
+  font-size: 0.9em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qz-wall-tag {
+  padding: 0 10px;
+  color: var(--label-color);
+  font-size: 0.8em;
+}
+.qz-wall-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px;
+}
+.qz-wall-actions .qz-btn {
+  padding: 8px 4px;
+  min-width: 0;
+  min-height: 40px;
+  font-size: 0.9em;
+}
+@media (max-width: 600px) {
+  .qz-seg {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .qz-seg button:nth-child(3) {
+    border-left: none;
+  }
+  .qz-seg button:nth-child(n + 3) {
+    border-top: 2px solid #000;
+  }
+  .qz-seg-small button:nth-child(n) {
+    border-top: none;
+  }
+  .qz-seg-small button:nth-child(2) {
+    border-left: 2px solid #000;
+  }
+  .qz-wall-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .qz-options {
+    flex-wrap: wrap;
+  }
+}
+.qz-group + .qz-group {
+  margin-top: 22px;
+}
+.qz-group h3 {
+  margin: 0;
+  font-size: 1.1em;
+}
+    </style>
+  </head>
+  <body class="web-ui">
+    <!--#include file="shared/Header.html.inc" -->
+<main class="page-content">
+<section class="card">
+  <h2>Sleep screen</h2>
+  <div class="qz-seg" id="modeSeg" role="radiogroup" aria-label="Sleep screen mode">
+    <button type="button" data-mode="2">Custom</button>
+    <button type="button" data-mode="4">Cover + Custom</button>
+    <button type="button" data-mode="8">Cover + Overlay</button>
+    <button type="button" data-mode="7">Page Overlay</button>
+  </div>
+  <p class="qz-hint" id="modeHint"></p>
+  <p class="qz-hint" id="pinLine"></p>
+</section>
+
+<section class="card">
+  <h2>Upload</h2>
+  <label class="qz-drop" id="dropZone">
+    <input type="file" id="fileInput" accept="image/*,.bmp,.png" multiple hidden />
+    <span class="qz-drop-title">Choose images</span>
+    <span class="qz-hint">or drop them here · JPG, PNG, BMP, HEIC (Safari)</span>
+  </label>
+  <div class="qz-options">
+    <span>Photos:</span>
+    <div class="qz-seg qz-seg-small" id="fitSeg">
+      <button type="button" data-fit="fill" class="active">Fill screen</button>
+      <button type="button" data-fit="fit">Fit whole image</button>
+    </div>
+  </div>
+  <p class="qz-hint" id="sizeHint"></p>
+  <div id="uploadList"></div>
+</section>
+
+<section class="card">
+  <div class="qz-row">
+    <h2>Your images</h2>
+    <button type="button" class="qz-btn" id="randomBtn">Shuffle</button>
+  </div>
+  <div class="qz-group">
+    <h3>Wallpapers</h3>
+    <p class="qz-hint" id="wallpapersLine">Loading…</p>
+    <div class="qz-wall-grid" id="wallpapersGrid"></div>
+  </div>
+  <div class="qz-group">
+    <h3>Overlays</h3>
+    <p class="qz-hint" id="overlaysLine">Loading…</p>
+    <div class="qz-wall-grid" id="overlaysGrid"></div>
+  </div>
+</section>
+</main>
+<!--#include file="shared/Footer.html.inc" -->
+  <script>
+// Sleep screen modes (CrossPointSettings::SLEEP_SCREEN_MODE).
+const MODE_HINTS = {
+  2: 'Shows your pinned wallpaper, or a random one.',
+  4: 'Shows the book cover, and a wallpaper when the book has no cover.',
+  8: 'Shows the book cover with an overlay on top.',
+  7: 'Shows the page you were reading with an overlay on top.',
+};
+const OVERLAY_MODES = [7, 8];
+
+// Wallpapers: grayscale BMPs for Custom. Overlays: PNGs (or BMPs) drawn over
+// the page or cover. Each has its own folder on the card.
+const GROUPS = {
+  wallpapers: { label: 'wallpapers', grid: 'wallpapersGrid', line: 'wallpapersLine' },
+  overlays: { label: 'overlays', grid: 'overlaysGrid', line: 'overlaysLine' },
+};
+
+let info = {
+  mode: 0,
+  pinned: '',
+  screen: { width: 480, height: 800 },
+  wallpapers: { upload: '/.sleep', folders: [] },
+  overlays: { upload: '/.sleep-overlay', folders: [] },
+};
+let fitMode = 'fill';
+let previewToken = 0;
+const previewUrls = [];
+const existingNames = { wallpapers: new Set(), overlays: new Set() };
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function joinPath(folder, name) {
+  return (folder.endsWith('/') ? folder : folder + '/') + name;
+}
+
+function baseName(path) {
+  return path ? path.substring(path.lastIndexOf('/') + 1) : '';
+}
+
+function isPng(name) {
+  return /\.png$/i.test(name);
+}
+
+function isBmp(name) {
+  return /\.bmp$/i.test(name);
+}
+
+async function postForm(url, fields) {
+  const body = new URLSearchParams(fields);
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  const text = await response.text();
+  if (!response.ok) throw new Error(text || response.statusText);
+  return text;
+}
+
+// ---- Sleep screen mode ----
+
+function renderInfo() {
+  for (const button of document.querySelectorAll('#modeSeg button')) {
+    const on = Number(button.dataset.mode) === info.mode;
+    button.classList.toggle('active', on);
+    button.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
+  document.getElementById('modeHint').textContent =
+    MODE_HINTS[info.mode] || 'Your reader uses a different sleep screen right now. Pick one above to use these images.';
+  document.getElementById('pinLine').textContent = info.pinned
+    ? 'Pinned: ' + baseName(info.pinned)
+    : 'Nothing pinned. The reader picks one at random.';
+  document.getElementById('sizeHint').textContent =
+    'Photos are resized to ' + info.screen.width + ' × ' + info.screen.height +
+    ' and saved as grayscale wallpapers. PNGs keep their transparency and go to Overlays.';
+  for (const tile of document.querySelectorAll('.qz-wall')) {
+    const pinned = tile.dataset.path === info.pinned;
+    tile.classList.toggle('pinned', pinned);
+    const button = tile.querySelector('.qz-pin');
+    button.textContent = pinned ? 'Pinned' : 'Use';
+    button.classList.toggle('primary', pinned);
+  }
+}
+
+async function loadInfo() {
+  const response = await fetch('/api/wallpapers?_=' + Date.now());
+  if (!response.ok) throw new Error(await response.text());
+  info = await response.json();
+  renderInfo();
+}
+
+async function setMode(mode) {
+  try {
+    info = JSON.parse(await postForm('/api/wallpapers/mode', { mode: String(mode) }));
+    renderInfo();
+  } catch (error) {
+    showWebAlert('Could not change the sleep screen: ' + error.message);
+  }
+}
+
+async function pin(path) {
+  try {
+    const wasMode = info.mode;
+    info = JSON.parse(await postForm('/api/wallpapers/pin', { path }));
+    renderInfo();
+    if (path && info.mode !== wasMode) {
+      const name = document.querySelector('#modeSeg button[data-mode="' + info.mode + '"]');
+      document.getElementById('modeHint').textContent =
+        'Switched to ' + (name ? name.textContent : 'a matching mode') + ' so this image shows. ' +
+        (MODE_HINTS[info.mode] || '');
+    }
+  } catch (error) {
+    showWebAlert('Could not pin this image: ' + error.message);
+  }
+}
+
+// ---- Image lists ----
+
+async function loadPreviews(tiles, token) {
+  // One image at a time: the reader serves files over a single connection.
+  for (const tile of tiles) {
+    if (token !== previewToken) return;
+    const holder = tile.querySelector('.qz-wall-img');
+    try {
+      const response = await fetch('/download?path=' + encodeURIComponent(tile.dataset.path));
+      if (!response.ok) throw new Error(response.statusText);
+      const raw = await response.blob();
+      const type = isPng(tile.dataset.path) ? 'image/png' : 'image/bmp';
+      const url = URL.createObjectURL(new Blob([raw], { type }));
+      previewUrls.push(url);
+      if (token !== previewToken) return;
+      const img = el('img');
+      img.alt = baseName(tile.dataset.path);
+      img.src = url;
+      holder.textContent = '';
+      holder.appendChild(img);
+    } catch (error) {
+      holder.textContent = 'No preview';
+    }
+  }
+}
+
+async function listFolder(folder) {
+  const response = await fetch('/api/files?path=' + encodeURIComponent(folder) + '&_=' + Date.now());
+  if (!response.ok) throw new Error(response.statusText);
+  return (await response.json()).filter((e) => !e.isDirectory).map((e) => ({ ...e, path: joinPath(folder, e.name) }));
+}
+
+// Lists one group's images and returns their tiles.
+async function loadGroup(key) {
+  const group = GROUPS[key];
+  const where = info[key];
+  const grid = document.getElementById(group.grid);
+  const line = document.getElementById(group.line);
+  grid.textContent = '';
+  existingNames[key] = new Set();
+  if (!where.folders.length) {
+    line.textContent = 'None yet. Uploads go to ' + where.upload + '.';
+    return [];
+  }
+
+  let images = [];
+  try {
+    for (const folder of where.folders) {
+      const entries = await listFolder(folder);
+      if (folder === where.upload) entries.forEach((e) => existingNames[key].add(e.name.toLowerCase()));
+      const usable = key === 'overlays' ? (e) => isPng(e.name) || isBmp(e.name) : (e) => isBmp(e.name);
+      images = images.concat(entries.filter(usable));
+    }
+  } catch (error) {
+    line.textContent = 'Could not read ' + where.folders.join(', ') + ': ' + error.message;
+    return [];
+  }
+  images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  line.textContent = images.length
+    ? images.length + (images.length === 1 ? ' image' : ' images') + ' in ' + where.folders.join(' and ') + '.'
+    : 'None in ' + where.folders.join(' and ') + ' yet.';
+
+  const tiles = [];
+  for (const image of images) {
+    const tile = el('div', 'qz-wall');
+    tile.dataset.path = image.path;
+    tile.appendChild(el('div', 'qz-wall-img', 'Loading…'));
+    tile.appendChild(el('div', 'qz-wall-name', image.name));
+    tile.appendChild(el('div', 'qz-wall-tag', isPng(image.name) ? 'PNG' : 'BMP'));
+    const actions = el('div', 'qz-wall-actions');
+    const pinButton = el('button', 'qz-btn qz-pin', 'Use');
+    pinButton.type = 'button';
+    pinButton.onclick = () => pin(tile.classList.contains('pinned') ? '' : image.path);
+    const deleteButton = el('button', 'qz-btn', 'Delete');
+    deleteButton.type = 'button';
+    deleteButton.onclick = () => removeImage(image.path);
+    actions.append(pinButton, deleteButton);
+    tile.appendChild(actions);
+    grid.appendChild(tile);
+    tiles.push(tile);
+  }
+  return tiles;
+}
+
+async function loadLists() {
+  previewToken += 1;
+  const token = previewToken;
+  while (previewUrls.length) URL.revokeObjectURL(previewUrls.pop());
+  const tiles = (await loadGroup('wallpapers')).concat(await loadGroup('overlays'));
+  renderInfo();
+  loadPreviews(tiles, token);
+}
+
+async function removeImage(path) {
+  if (!(await showWebConfirm('Delete ' + baseName(path) + ' from the reader?'))) return;
+  try {
+    if (path === info.pinned) await postForm('/api/wallpapers/pin', { path: '' });
+    await postForm('/delete', { path });
+  } catch (error) {
+    showWebAlert('Could not delete: ' + error.message);
+  }
+  await refresh();
+}
+
+async function refresh() {
+  try {
+    await loadInfo();
+  } catch (error) {
+    for (const key of Object.keys(GROUPS)) {
+      document.getElementById(GROUPS[key].line).textContent = 'Could not reach the reader: ' + error.message;
+    }
+    return;
+  }
+  await loadLists();
+}
+
+// ---- Converting photos for the screen ----
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('This browser cannot open that image'));
+    };
+    img.src = url;
+  });
+}
+
+function drawToScreen(img, fit, background) {
+  const canvas = document.createElement('canvas');
+  canvas.width = info.screen.width;
+  canvas.height = info.screen.height;
+  const ctx = canvas.getContext('2d');
+  if (background) {
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  const scale =
+    fit === 'fit'
+      ? Math.min(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight)
+      : Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+  const w = img.naturalWidth * scale;
+  const h = img.naturalHeight * scale;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+  return canvas;
+}
+
+// An 8-bit grayscale BMP: the reader dithers it to the panel's grays.
+function canvasToGrayBmp(canvas) {
+  const { width, height } = canvas;
+  const pixels = canvas.getContext('2d').getImageData(0, 0, width, height).data;
+  const rowSize = (width + 3) & ~3;
+  const paletteSize = 256 * 4;
+  const dataOffset = 14 + 40 + paletteSize;
+  const fileSize = dataOffset + rowSize * height;
+  const buffer = new ArrayBuffer(fileSize);
+  const view = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+
+  view.setUint8(0, 0x42);
+  view.setUint8(1, 0x4d);
+  view.setUint32(2, fileSize, true);
+  view.setUint32(10, dataOffset, true);
+  view.setUint32(14, 40, true);
+  view.setInt32(18, width, true);
+  view.setInt32(22, height, true);
+  view.setUint16(26, 1, true);
+  view.setUint16(28, 8, true);
+  view.setUint32(30, 0, true);
+  view.setUint32(34, rowSize * height, true);
+  view.setInt32(38, 2835, true);
+  view.setInt32(42, 2835, true);
+  view.setUint32(46, 256, true);
+  view.setUint32(50, 256, true);
+  for (let i = 0; i < 256; i++) {
+    const p = 54 + i * 4;
+    bytes[p] = i;
+    bytes[p + 1] = i;
+    bytes[p + 2] = i;
+  }
+  for (let y = 0; y < height; y++) {
+    const row = dataOffset + (height - 1 - y) * rowSize;
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      bytes[row + x] = Math.round(0.299 * pixels[i] + 0.587 * pixels[i + 1] + 0.114 * pixels[i + 2]);
+    }
+  }
+  return new Blob([buffer], { type: 'image/bmp' });
+}
+
+function canvasToPng(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('PNG encoding failed'))), 'image/png');
+  });
+}
+
+function safeName(name, extension, taken) {
+  const stem = (name.replace(/\.[^.]*$/, '').replace(/[^A-Za-z0-9 _\-()]+/g, '_').trim() || 'wallpaper').substring(0, 60);
+  let candidate = stem + extension;
+  for (let n = 2; taken.has(candidate.toLowerCase()); n++) candidate = stem + ' (' + n + ')' + extension;
+  return candidate;
+}
+
+// Returns { group, blob, name }: PNGs become overlays, everything else a wallpaper BMP.
+async function prepare(file) {
+  if (isBmp(file.name)) {
+    return { group: 'wallpapers', blob: file, name: safeName(file.name, '.bmp', existingNames.wallpapers) };
+  }
+  const img = await loadImage(file);
+  if (isPng(file.name) || file.type === 'image/png') {
+    const name = safeName(file.name, '.png', existingNames.overlays);
+    // Keep transparency. Only shrink PNGs that are bigger than the screen.
+    const fits = img.naturalWidth <= info.screen.width && img.naturalHeight <= info.screen.height;
+    if (fits) return { group: 'overlays', blob: file, name };
+    return { group: 'overlays', blob: await canvasToPng(drawToScreen(img, 'fit', null)), name };
+  }
+  return {
+    group: 'wallpapers',
+    blob: canvasToGrayBmp(drawToScreen(img, fitMode, '#fff')),
+    name: safeName(file.name, '.bmp', existingNames.wallpapers),
+  };
+}
+
+function uploadBlob(folder, blob, name, onProgress) {
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append('file', blob, name);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload?path=' + encodeURIComponent(folder), true);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(e.loaded / e.total);
+    };
+    xhr.onload = () => (xhr.status === 200 ? resolve() : reject(new Error(xhr.responseText || 'Upload failed')));
+    xhr.onerror = () => reject(new Error('Connection lost'));
+    xhr.send(form);
+  });
+}
+
+async function ensureFolder(group) {
+  if (info[group].folders.includes(info[group].upload)) return;
+  info = JSON.parse(await postForm('/api/wallpapers/folder', { kind: group }));
+}
+
+async function uploadFiles(files) {
+  const list = document.getElementById('uploadList');
+  const rows = files.map((file) => {
+    const row = el('div', 'qz-up');
+    const state = el('div', 'qz-up-state', 'Waiting');
+    const track = el('div', 'qz-up-track');
+    const fill = el('div', 'qz-up-fill');
+    track.appendChild(fill);
+    row.append(el('div', 'qz-up-name', file.name), state, track);
+    list.appendChild(row);
+    return { file, state, fill };
+  });
+
+  let uploaded = 0;
+  for (const row of rows) {
+    try {
+      row.state.textContent = 'Preparing';
+      const { group, blob, name } = await prepare(row.file);
+      await ensureFolder(group);
+      row.state.textContent = 'Uploading';
+      await uploadBlob(info[group].upload, blob, name, (fraction) => {
+        row.fill.style.width = Math.round(fraction * 100) + '%';
+      });
+      row.fill.style.width = '100%';
+      existingNames[group].add(name.toLowerCase());
+      row.state.textContent = 'Done · ' + (group === 'overlays' ? 'Overlay' : 'Wallpaper') + ' · ' + name;
+      uploaded += 1;
+    } catch (error) {
+      row.state.textContent = error.message;
+      row.state.classList.add('error');
+    }
+  }
+  if (uploaded > 0) await refresh();
+}
+
+// ---- Wiring ----
+
+for (const button of document.querySelectorAll('#modeSeg button')) {
+  button.onclick = () => setMode(Number(button.dataset.mode));
+}
+for (const button of document.querySelectorAll('#fitSeg button')) {
+  button.onclick = () => {
+    fitMode = button.dataset.fit;
+    for (const other of document.querySelectorAll('#fitSeg button')) other.classList.toggle('active', other === button);
+  };
+}
+document.getElementById('randomBtn').onclick = () => pin('');
+
+const fileInput = document.getElementById('fileInput');
+fileInput.onchange = () => {
+  const files = Array.from(fileInput.files || []);
+  fileInput.value = '';
+  if (files.length) uploadFiles(files);
+};
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragging');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragging');
+  const files = Array.from(e.dataTransfer.files || []).filter((f) => f.type.startsWith('image/') || isBmp(f.name));
+  if (files.length) uploadFiles(files);
+});
+
+refresh();
+  </script>
+  </body>
+</html>

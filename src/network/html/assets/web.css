@@ -1007,3 +1007,237 @@ body.web-ui  {
     box-shadow: none;
   }
 }
+
+/* ======================================================================
+   QuartzInk look: black rounded title bar, outlined rounded cards, black
+   for selection, NV Jost. Kept in one block at the end so CrossPoint's
+   rules above merge cleanly; later rules win at equal specificity, and the
+   :root block also replaces the dark-mode palette (QuartzInk is light-only).
+   ====================================================================== */
+@font-face {
+  font-family: "NV Jost";
+  src: url("/assets/jost.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "NV Jost";
+  src: url("/assets/jost-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+:root {
+  color-scheme: light;
+  --font-color: #111;
+  --bg: #fff;
+  --title-color: #000;
+  --card-bg: #fff;
+  --label-color: #555;
+  --border-color: #111;
+  --control-border: #111;
+  --muted-color: #666;
+  --accent-color: #111;
+  --accent-color-10: rgb(0 0 0 / 6%);
+  --accent-hover-color: #333;
+  --accent-soft: rgb(0 0 0 / 8%);
+  --toggle-bg: #c8c8c8;
+  --button-bg: #000;
+  --button-hover: #333;
+  --button-text: #fff;
+  --success-color: #111;
+  --danger-color: #b91c1c;
+  --danger-hover: #991b1b;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+  --warning-text: #78561d;
+  --warning-bg: #fdf6e6;
+  --warning-border: #e7d4a8;
+  --info-color: #111;
+  --secondary-color: #444;
+  --shadow-sm: none;
+  --qz-border: 3px;
+  --qz-radius: 14px;
+  --qz-width: 900px;
+}
+body.web-ui {
+  font-family: "NV Jost", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+.web-ui h1,
+.web-ui h2,
+.web-ui .modal h3 {
+  font-family: inherit;
+  font-weight: 700;
+}
+.web-ui .page-content {
+  max-width: var(--qz-width);
+  padding: 4px 18px 0;
+  min-height: 0;
+  margin-bottom: 0;
+}
+/* Title bar and page links. */
+.qz-head {
+  max-width: var(--qz-width);
+  margin: 0 auto;
+  padding: 20px 18px 0;
+}
+.qz-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #000;
+  color: #fff;
+  border-radius: var(--qz-radius);
+  padding: 14px 22px;
+  margin: 0 0 14px;
+}
+.qz-wordmark {
+  color: #fff;
+  text-decoration: none;
+  font-size: 2.1em;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.qz-wordmark b {
+  font-weight: 700;
+}
+.qz-page-title {
+  font-size: 1.05em;
+  font-weight: 700;
+  opacity: 0.85;
+  text-align: right;
+}
+.qz-nav {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 6px;
+  padding: 4px;
+  border: var(--qz-border) solid #111;
+  border-radius: var(--qz-radius);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.qz-nav::-webkit-scrollbar {
+  display: none;
+}
+.qz-nav a {
+  flex: 1 0 auto;
+  text-align: center;
+  padding: 8px 14px;
+  color: #111;
+  text-decoration: none;
+  border-radius: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.qz-nav a.active {
+  background: #000;
+  color: #fff;
+}
+.qz-nav a:not(.active):hover {
+  background: var(--accent-soft);
+}
+body.qz-home .qz-nav {
+  display: none;
+}
+.qz-footer {
+  text-align: center;
+  color: var(--label-color);
+  font-size: 0.85em;
+  padding: 24px 16px 32px;
+}
+.qz-footer a {
+  color: inherit;
+}
+/* Cards and controls. */
+.web-ui .card {
+  border: var(--qz-border) solid #111;
+  border-radius: var(--qz-radius);
+  box-shadow: none;
+  padding: 20px 22px;
+  margin: 14px 0;
+}
+.web-ui .card h2 {
+  font-size: 1.3em;
+}
+.web-ui .action-btn,
+.web-ui .save-btn,
+.web-ui .btn,
+.web-ui .folder-btn,
+.web-ui .upload-btn,
+.web-ui .delete-btn-confirm,
+.web-ui .rename-btn-confirm,
+.web-ui .move-btn-confirm,
+.web-ui .folder-action-btn,
+.web-ui .delete-btn-cancel {
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: none;
+}
+.web-ui .folder-action-btn,
+.web-ui .delete-btn-cancel {
+  border: 2px solid #111;
+}
+.web-ui input[type="text"],
+.web-ui input[type="password"],
+.web-ui input[type="number"],
+.web-ui input[type="search"],
+.web-ui select,
+.web-ui textarea {
+  border-radius: 10px;
+}
+/* Quartz buttons for the Wallpapers and Stats pages: outlined, black when primary. */
+.qz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 18px;
+  border: var(--qz-border) solid #000;
+  border-radius: 12px;
+  background: #fff;
+  color: #000;
+  font-size: 1em;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.qz-btn.primary {
+  background: #000;
+  color: #fff;
+}
+.qz-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.qz-hint {
+  color: var(--label-color);
+  margin: 8px 0 0;
+}
+@media (max-width: 640px) {
+  body.web-ui {
+    font-size: 15px;
+  }
+  .qz-head {
+    padding: 12px 12px 0;
+  }
+  .web-ui .page-content {
+    padding: 4px 12px 0;
+  }
+  .qz-bar {
+    padding: 12px 16px;
+  }
+  .qz-wordmark {
+    font-size: 1.7em;
+  }
+  .web-ui .card {
+    padding: 16px;
+    margin: 12px 0;
+  }
+}

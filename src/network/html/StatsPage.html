@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Reading Stats - QuartzInk</title>
+    <link rel="stylesheet" href="/assets/web.css" />
+    <link rel="icon" type="image/png" href="/assets/logo.png" />
+    <link rel="preload" href="/assets/jost.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content="#000000" />
+    <style>
+.qz-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.qz-row h2 {
+  margin: 0;
+}
+h2 {
+  font-size: 1.3em;
+  margin: 0 0 8px;
+}
+h3 {
+  font-size: 1em;
+  margin: 16px 0 8px;
+}
+.qz-center {
+  text-align: center;
+}
+.qz-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.qz-stat {
+  border: 2px solid #000;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.qz-stat b {
+  display: block;
+  font-size: 1.35em;
+  line-height: 1.2;
+}
+.qz-stat span {
+  color: var(--label-color);
+  font-size: 0.9em;
+}
+.qz-bars {
+  display: grid;
+  gap: 6px;
+}
+.qz-bar-row {
+  display: grid;
+  grid-template-columns: 6.5em 1fr 4.5em;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95em;
+}
+.qz-bar-track {
+  height: 14px;
+  border: 2px solid #000;
+  border-radius: 7px;
+  overflow: hidden;
+}
+.qz-bar-fill {
+  height: 100%;
+  background: #000;
+}
+.qz-bar-row .qz-num {
+  text-align: right;
+  color: var(--label-color);
+}
+.qz-book {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 12px 0;
+  border-bottom: 2px solid #000;
+}
+.qz-book:last-child {
+  border-bottom: none;
+}
+.qz-book-title {
+  font-weight: 700;
+}
+.qz-book-meta {
+  color: var(--label-color);
+  font-size: 0.92em;
+}
+.qz-book-time {
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.qz-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #000;
+  color: #fff;
+  font-size: 0.78em;
+  font-weight: 700;
+  vertical-align: middle;
+}
+@media (max-width: 600px) {
+  .qz-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .qz-bar-row {
+    grid-template-columns: 5.5em 1fr 4em;
+  }
+}
+
+/* Reading days: one column per week, Monday at the top, like the reader. */
+.qz-cal {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, 1fr);
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  max-width: 620px;
+  margin: 14px auto 0;
+}
+.qz-cal i,
+.qz-cal-key i {
+  display: block;
+  aspect-ratio: 1 / 1;
+  border: 2px solid #000;
+  border-radius: 4px;
+  background: #fff;
+}
+.qz-cal i.future {
+  visibility: hidden;
+}
+.qz-cal i.today {
+  outline: 2px solid #000;
+  outline-offset: 1px;
+}
+.l1 { background: #d4d4d4 !important; }
+.l2 { background: #9a9a9a !important; }
+.l3 { background: #555 !important; }
+.l4 { background: #000 !important; }
+.qz-cal-key {
+  display: flex;
+  max-width: 620px;
+  margin-inline: auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 10px;
+  color: var(--label-color);
+  font-size: 0.85em;
+}
+.qz-cal-key i {
+  width: 14px;
+}
+.qz-cal-key span {
+  margin: 0 4px;
+}
+    </style>
+  </head>
+  <body class="web-ui">
+    <!--#include file="shared/Header.html.inc" -->
+<main class="page-content">
+<section class="card">
+  <div class="qz-row">
+    <h2>Reading Stats</h2>
+    <a class="qz-btn primary" href="/api/stats?download=1" download="quartzink-stats.json">Export JSON</a>
+  </div>
+  <p class="qz-hint" id="statsSource">Loading…</p>
+  <div class="qz-stat-grid" id="totals"></div>
+</section>
+
+<section class="card" id="daysCard" hidden>
+  <div class="qz-row">
+    <h2>Reading days</h2>
+    <span class="qz-hint" id="daysSummary"></span>
+  </div>
+  <div class="qz-cal" id="calendar" role="img"></div>
+  <div class="qz-cal-key" aria-hidden="true">
+    <span>Less</span><i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>More</span>
+  </div>
+</section>
+
+<section class="card" id="whenCard" hidden>
+  <h2>When you read</h2>
+  <h3>Time of day</h3>
+  <div class="qz-bars" id="timeOfDay"></div>
+  <h3>Day of week</h3>
+  <div class="qz-bars" id="dayOfWeek"></div>
+</section>
+
+<section class="card" id="booksCard" hidden>
+  <h2>Books</h2>
+  <div id="books"></div>
+</section>
+
+<p class="qz-hint qz-center">Quartz Reader can import these from <b>Settings → Import from e-reader</b>.</p>
+</main>
+<!--#include file="shared/Footer.html.inc" -->
+  <script>
+function duration(seconds) {
+  seconds = Math.max(0, Math.round(seconds || 0));
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return h + 'h ' + m + 'm';
+  if (m > 0) return m + ' min';
+  return seconds > 0 ? '< 1 min' : '0 min';
+}
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function stat(value, label) {
+  const box = el('div', 'qz-stat');
+  box.appendChild(el('b', '', value));
+  box.appendChild(el('span', '', label));
+  return box;
+}
+
+function bars(container, rows) {
+  const max = Math.max(1, ...rows.map((r) => r[1]));
+  container.textContent = '';
+  for (const [label, value] of rows) {
+    const row = el('div', 'qz-bar-row');
+    row.appendChild(el('span', '', label));
+    const track = el('div', 'qz-bar-track');
+    const fill = el('div', 'qz-bar-fill');
+    fill.style.width = Math.round((value / max) * 100) + '%';
+    track.appendChild(fill);
+    row.appendChild(track);
+    row.appendChild(el('span', 'qz-num', duration(value)));
+    container.appendChild(row);
+  }
+}
+
+// Reading days: the last 18 weeks from the device's daily log, newest
+// week on the right. Shade steps: under 15 min, 30, 60, and an hour or more.
+const CAL_WEEKS = 18;
+
+function dayKey(date) {
+  return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' +
+    String(date.getDate()).padStart(2, '0');
+}
+
+function shade(seconds) {
+  if (seconds <= 0) return 0;
+  if (seconds < 15 * 60) return 1;
+  if (seconds < 30 * 60) return 2;
+  if (seconds < 60 * 60) return 3;
+  return 4;
+}
+
+function calendar(daily, exportedAt) {
+  const byDay = new Map(daily);
+  // The device's own date, so the grid matches what the reader shows.
+  const today = exportedAt ? new Date(exportedAt.substring(0, 10) + 'T12:00:00') : new Date();
+  const mondayOffset = (today.getDay() + 6) % 7;
+  const start = new Date(today);
+  start.setDate(today.getDate() - mondayOffset - (CAL_WEEKS - 1) * 7);
+  const grid = document.getElementById('calendar');
+  grid.textContent = '';
+  let readDays = 0;
+  let readSeconds = 0;
+  for (let i = 0; i < CAL_WEEKS * 7; i++) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + i);
+    const key = dayKey(day);
+    const seconds = byDay.get(key) || 0;
+    const cell = el('i', 'l' + shade(seconds));
+    if (day > today) cell.classList.add('future');
+    if (key === dayKey(today)) cell.classList.add('today');
+    if (day <= today) cell.title = key + ': ' + duration(seconds);
+    if (seconds > 0 && day <= today) {
+      readDays += 1;
+      readSeconds += seconds;
+    }
+    grid.appendChild(cell);
+  }
+  const summary = readDays + (readDays === 1 ? ' day' : ' days') + ' · ' + duration(readSeconds) + ' in ' + CAL_WEEKS + ' weeks';
+  document.getElementById('daysSummary').textContent = summary;
+  grid.setAttribute('aria-label', 'Reading days: ' + summary);
+}
+
+async function loadStats() {
+  const source = document.getElementById('statsSource');
+  let data;
+  try {
+    const response = await fetch('/api/stats');
+    if (!response.ok) throw new Error(response.status + ' ' + response.statusText);
+    data = await response.json();
+  } catch (error) {
+    source.textContent = 'Could not load reading stats: ' + error.message;
+    return;
+  }
+
+  const g = data.global || {};
+  const device = data.device || {};
+  source.textContent = (device.name || 'This reader') + (data.exportedAt ? ' · as of ' + data.exportedAt.replace('T', ' ') : '');
+
+  const totals = document.getElementById('totals');
+  totals.append(
+    stat(duration(g.readingSeconds), 'reading time'),
+    stat(String(g.completedBooks || 0), 'books finished'),
+    stat(String(g.sessions || 0), 'sessions'),
+    stat((g.pagesTurned || 0).toLocaleString(), 'pages turned'),
+    stat((g.currentStreakDays || 0) + ' days', 'current streak'),
+    stat((g.longestStreakDays || 0) + ' days', 'longest streak'),
+  );
+
+  if (Array.isArray(g.dailySeconds)) {
+    document.getElementById('daysCard').hidden = false;
+    calendar(g.dailySeconds, data.exportedAt);
+  }
+
+  const tod = g.timeOfDaySeconds || {};
+  const dow = g.dayOfWeekSeconds || [];
+  if (g.readingSeconds > 0) {
+    document.getElementById('whenCard').hidden = false;
+    bars(document.getElementById('timeOfDay'), [
+      ['Morning', tod.morning || 0],
+      ['Afternoon', tod.afternoon || 0],
+      ['Evening', tod.evening || 0],
+      ['Night', tod.night || 0],
+    ]);
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    bars(document.getElementById('dayOfWeek'), days.map((d, i) => [d, dow[i] || 0]));
+  }
+
+  const books = (data.books || []).filter((b) => (b.readingSeconds || 0) > 0 || b.completed);
+  books.sort((a, b) => (b.readingSeconds || 0) - (a.readingSeconds || 0));
+  if (books.length > 0) {
+    document.getElementById('booksCard').hidden = false;
+    const list = document.getElementById('books');
+    for (const book of books) {
+      const row = el('div', 'qz-book');
+      const left = el('div');
+      const title = el('div', 'qz-book-title', book.title || book.path);
+      if (book.completed) title.appendChild(el('span', 'qz-badge', 'Finished'));
+      left.appendChild(title);
+      const meta = [book.author, (book.sessions || 0) + ' sessions'];
+      if (!book.completed && book.timeLeftSeconds > 0) meta.push(duration(book.timeLeftSeconds) + ' left');
+      left.appendChild(el('div', 'qz-book-meta', meta.filter(Boolean).join(' · ')));
+      row.appendChild(left);
+      row.appendChild(el('div', 'qz-book-time', duration(book.readingSeconds)));
+      list.appendChild(row);
+    }
+  }
+}
+
+loadStats();
+  </script>
+  </body>
+</html>

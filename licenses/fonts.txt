@@ -406,6 +406,7 @@ Full terms: see the shared OFL 1.1 section at the end of this file.
 ========================================================================
 NV Jost (built-in reading font)
 Source: lib/EpdFont/builtinFonts/source/NVJost (Nico Verbruggen's e-reader cut of Jost)
+Also the web portal font: src/network/html/assets/jost.woff2, jost-bold.woff2
 ========================================================================
 
 Copyright 2020 The Jost Project Authors (https://github.com/indestructible-type/Jost)

@@ -1,44 +1,37 @@
-<header class="brand">
-  <div class="brand-inner">
-    <h1>
-      <a class="brand-link" href="/"
-        ><img
-          class="brand-logo"
-          src="/assets/crosspoint-icon.svg"
-          alt=""
-          width="32"
-          height="32"
-        />CrossPoint <span class="brand-reader">Reader</span></a
-      >
-    </h1>
-    <nav class="nav-links desktop-nav">
-      <a href="/">Home</a>
-      <a href="/files">File Manager</a>
-      <a href="/settings">Settings</a>
-      <a href="/fonts">Fonts</a>
-      <a href="/plugins">Plugins</a>
-    </nav>
+<header class="qz-head">
+  <div class="qz-bar">
+    <a class="qz-wordmark" href="/"><b>Quartz</b> Ink</a>
+    <span class="qz-page-title" id="qzPageTitle"></span>
   </div>
-  <details class="mobile-nav">
-    <summary aria-label="Navigation menu">
-      <svg class="icon menu-open" viewBox="0 0 24 24">
-        <path d="M4 7h16M4 12h16M4 17h16" /></svg
-      ><svg class="icon menu-close" viewBox="0 0 24 24">
-        <path d="m6 6 12 12M6 18 18 6" />
-      </svg>
-    </summary>
-    <nav class="nav-links mobile-links">
-      <a href="/">Home</a>
-      <a href="/files">File Manager</a>
-      <a href="/settings">Settings</a>
-      <a href="/fonts">Fonts</a>
-      <a href="/plugins">Plugins</a>
-    </nav>
-  </details>
+  <nav class="qz-nav" aria-label="Pages">
+    <a href="/">Home</a>
+    <a href="/files">Files</a>
+    <a href="/wallpapers">Wallpapers</a>
+    <a href="/fonts">Fonts</a>
+    <a href="/stats">Stats</a>
+    <a href="/settings">Settings</a>
+    <a href="/plugins">Plugins</a>
+  </nav>
   <script>
-    // The server sets cpPlugins=1 on every page while plugins are enabled.
-    if (!document.cookie.split('; ').includes('cpPlugins=1')) {
-      document.querySelectorAll('.brand a[href="/plugins"]').forEach((a) => a.remove());
-    }
+    (function () {
+      // The server sets cpPlugins=1 on every page while plugins are enabled.
+      if (!document.cookie.split('; ').includes('cpPlugins=1')) {
+        document.querySelectorAll('.qz-nav a[href="/plugins"]').forEach((a) => a.remove());
+      }
+      const titles = {
+        '/': '', '/files': 'Files', '/wallpapers': 'Wallpapers', '/fonts': 'Fonts', '/stats': 'Reading Stats',
+        '/settings': 'Settings', '/plugins': 'Plugins', '/plugins-run': 'Plugins',
+      };
+      const path = location.pathname.replace(/\/+$/, '') || '/';
+      if (path === '/') document.body.classList.add('qz-home');
+      document.getElementById('qzPageTitle').textContent = titles[path] || '';
+      const navPath = path === '/plugins-run' ? '/plugins' : path;
+      const active = document.querySelector('.qz-nav a[href="' + navPath + '"]');
+      if (active) {
+        active.classList.add('active');
+        active.setAttribute('aria-current', 'page');
+        if (active.scrollIntoView) active.scrollIntoView({ block: 'nearest', inline: 'center' });
+      }
+    })();
   </script>
 </header>
