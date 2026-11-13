@@ -20,6 +20,8 @@ the IP address shown on the device screen.
 | `GET` | `/settings` | Web settings page |
 | `GET` | `/fonts` | SD-card font manager page |
 | `GET` | `/plugins` | Plugins page (web settings of SD-card plugins) |
+| `GET` | `/wallpapers` | Sleep wallpapers and overlays page |
+| `GET` | `/stats` | Reading stats page (reads `/api/stats`) |
 | `GET` | `/js/jszip.min.js` | JavaScript asset used by the file manager |
 | `GET` | `/js/epub-optimizer.js` | File manager EPUB optimizer, loaded with JSZip only when needed |
 | `GET` | `/js/plugin-host.js` | Browser plugin host shared by the Plugins, File Manager, and `/plugins-run` pages |
@@ -184,8 +186,10 @@ Form parameters:
 | `path` | Yes | Existing file path |
 | `name` | Yes | New file name, not a path |
 
-Only files can be renamed through this endpoint. The old EPUB cache path is
-cleared before the rename.
+Only files can be renamed through this endpoint. The book's saved state moves
+with it: its cache (progress, reading stats), bookmarks, clippings, protected-book
+`.key`/`.rights` files, Recent Books entry and the open-book path. If any part
+cannot move, the parts already moved are put back and the request fails.
 
 ### `POST /move`
 
@@ -202,8 +206,10 @@ Form parameters:
 | `path` | Yes | Existing file path |
 | `dest` | Yes | Existing destination folder |
 
-Only files can be moved through this endpoint. The old EPUB cache path is
-cleared before the move.
+Only files can be moved through this endpoint. The book's saved state moves
+with it: its cache (progress, reading stats), bookmarks, clippings, protected-book
+`.key`/`.rights` files, Recent Books entry and the open-book path. If any part
+cannot move, the parts already moved are put back and the request fails.
 
 ### `POST /delete`
 
@@ -363,6 +369,48 @@ Successful response:
 ```json
 {"ok":true}
 ```
+
+## Sleep Wallpapers API
+
+Wallpapers are BMPs in `/.sleep` (or `/sleep`), used by the Custom and Cover +
+Custom sleep screens. Overlays are PNGs or BMPs in `/.sleep-overlay` (or
+`/sleep-overlay`), drawn over the page or cover by Page Overlay and Cover +
+Overlay. One image can be pinned so it shows every time. Upload with
+`POST /upload`; delete with `POST /delete`.
+
+### `GET /api/wallpapers`
+
+```json
+{
+  "mode": 2,
+  "pinned": "/.sleep/forest.bmp",
+  "screen": { "width": 480, "height": 800 },
+  "wallpapers": { "upload": "/.sleep", "folders": ["/.sleep"] },
+  "overlays": { "upload": "/.sleep-overlay", "folders": [] }
+}
+```
+
+`mode` is the sleep screen setting (2 Custom, 4 Cover + Custom, 7 Page
+Overlay, 8 Cover + Overlay). `screen` is the portrait panel size. `folders`
+lists the folders that exist; `upload` is where new files go.
+
+### `POST /api/wallpapers/pin`
+
+Form parameter `path`: the image to pin, or empty to unpin (a random image
+each time). Pinning switches the sleep screen to a mode that shows that kind
+of image when the current one would not. Returns the same JSON as `GET`;
+`400` when the file is not a usable image in one of the folders.
+
+### `POST /api/wallpapers/mode`
+
+Form parameter `mode`: the sleep screen mode number. Returns the same JSON as
+`GET`.
+
+### `POST /api/wallpapers/folder`
+
+Form parameter `kind`: `wallpapers` or `overlays`. Creates `/.sleep` or
+`/.sleep-overlay` if missing (`/mkdir` does not create dot-named folders).
+Returns the same JSON as `GET`.
 
 ## OPDS Server API
 

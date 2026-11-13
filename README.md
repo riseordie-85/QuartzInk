@@ -1,300 +1,182 @@
-# CrossPoint Reader
+# QuartzInk
 
-[![Fund contributors](https://img.shields.io/badge/%F0%9F%91%91_Fund_contributors-royalty.dev-BB953A?style=for-the-badge&labelColor=1a1a1a)](https://app.royalty.dev/crosspoint-reader/crosspoint-reader)
+**QuartzInk** is a personal build of [CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader),
+the open-source e-reader firmware. It keeps CrossPoint's reader underneath and gives it the look and habits of the
+Quartz apps (Quartz Reader, Quartz Notes and friends): a Quartz Home screen with shelves, Quartz-style page
+settings, reading stats that can leave the device, and a Quartz web dashboard.
 
-CrossPoint is open-source e-reader firmware - community-built, fully hackable, free forever. It's maintained by a growing community of developers and readers who believe your device should do what you want - not what a manufacturer decided for you.
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./docs/images/quartzink/home-shelves.jpg" alt="Quartz Home with the current book, recent covers and shelf buttons" />
+    </td>
+    <td align="center" width="50%">
+      <img src="./docs/images/quartzink/page-settings.jpg" alt="Quartz page settings: size, font, spacing, margins and alignment" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="./docs/images/quartzink/book-bar.jpg" alt="The book bar with Home, Look up, Contents, Bookmark and Page settings, and the timeline" />
+    </td>
+    <td align="center" width="50%">
+      <img src="./docs/images/quartzink/sleep-settings.jpg" alt="Sleep screen choices including Cover + Overlay" />
+    </td>
+  </tr>
+</table>
 
-### Now running on:
+### Supported devices
 
-- **ESP32C3-based** Xteink X4 and X3.
-- **ESP32S3-based** Xteink X4Pro and X4Classic, Seeed reTerminal Sticky, M5PaperMono, Metalio E-Ink 4, EEGOREAD A4 and Boox Picco.
+QuartzInk is built and tested on:
 
-Check [our Devices page](https://crosspointreader.com/devices) for the full list.
+- **Xteink X4 Pro** (ESP32-S3, touch)
+- **Xteink X3** (ESP32-C3, buttons)
+- **Boox Picco** (ESP32-S3, touch)
 
-![CrossPoint Reader running on Xteink device](./docs/images/cover.jpg)
-
-> If you're planning to buy an Xteink device, consider purchasing an **X3/X4 Developer Edition** through https://crosspointreader.com. CrossPoint receives a small share of each sale, helping fund development costs.
-
-## What can CrossPoint do?
-
-- **Reader engine**: EPUB 2/3 rendering with embedded-style option, image handling, hyphenation, kerning, adaptive table layouts, native CJK ruby annotations, chapter navigation, footnotes, bookmarks, dictionary lookups ([StarDict](docs/dictionary.md)), go-to-percent, auto page turn, orientation control, focus reading, KOReader progress sync and more.
-
-- **Various formats**: native handling for `.epub`, `.xtc/.xtch`, `.txt`, and `.bmp`.
-
-- **Touch reading**: follow EPUB links and look up words in the dictionary on touch-enabled devices.
-
-- **Highlights and clippings**: highlight text in EPUBs and save excerpts as clippings. Use the reader menu on button devices, or hold a word and drag the selection handles on touch devices. Look up selected words or phrases in the dictionary. Enable Sync Clippings to sync saved excerpts through a compatible CrossPoint Sync server. See [Clippings and Highlights](USER_GUIDE.md#53-clippings-and-highlights).
-
-- **Screenshots.**
-
-- **Custom fonts**: install your favorite fonts on the SD card.
-
-- **Tilt page turn (X3 and Sticky)**.
-
-- **Bluetooth page turners**: pair a remote under Settings → Connectivity → Bluetooth Page Turner. Map short and long presses to page turns, chapter navigation, the reader menu, or clipping selection.
-
-- **USB Drive mode (X4Pro)**: access the SD card as USB mass storage.
-
-- **Library workflow**: indexed title/author search, recently-added and alphabetical views, multilingual grouping, folder browser, recent books, and SD-cache management.
-
-- **Wireless workflows**:
-  
-  - File transfer web UI
-  - EPUB Optimizer
-  - Web settings UI/API (edit many device settings from browser)
-  - WebSocket fast uploads
-  - WebDAV handler
-  - AP mode (hotspot) and STA mode (join existing Wi-Fi), both with QR helpers
-  - Calibre wireless connect flow
-  - OPDS browser with saved servers (up to 8), search, pagination, and direct download; hold Back for one second and release in a catalog to return to the main menu
-  - OTA update checks and installs from GitHub releases
-
-- **Customization**: night mode, multiple themes (Classic, Lyra, Lyra Extended, RoundedRaff), sleep screen modes including transparent overlays, front/side button remapping, status bar controls, power-button behavior, refresh cadence, and more.
-
-- **Localization**: 34 UI languages and counting, including CJK font fallback and RTL support.
-
-- **SD card plugins**: install plugins for book catalogs, downloads, and tools in the device's web interface. Enable Plugins under Settings → Connectivity to show them on Home. On-device plugins use existing firmware screens and operations. JavaScript runs in a browser on your phone or computer, and its page must stay open while it works. Plugins follow [CrossPoint's reading-focused scope](SCOPE.md#out-of-scope). See the [plugin guide](docs/sd-plugins.md).
-
-### Coming soon:
-
-- More themes.
-
-- Much more! stay tuned.
+CrossPoint's other targets still build from the same code, but are not tested here.
 
 ---
 
-## USB-locked devices (Xteink Unlocker)
+## What QuartzInk adds
 
-Some Xteink units purchased from third-party stores (e.g. AliExpress) ship with USB flashing locked from the factory.
-If your device is locked, you will need to use the **Xteink Unlocker** tool available at
-https://crosspointreader.com/#unlock-tool before you can flash CrossPoint.
+### Quartz Home and shelves
 
-**You do not need this tool if you bought your device directly from xteink.com.** Those units are not locked.
+Choose **Quartz** in Display → UI Theme (it's the default). Home shows:
 
-**Not sure if your device is locked?** Power it on, connect the USB-C cable, and try flashing via the web flasher first (see
-[Install firmware](#install-firmware) below). If the browser's serial device picker does not show your device, try a different
-USB port or browser before assuming the device is locked. Only reach for the unlocker if the device still doesn't appear.
+- the current book with its cover, shelf, completion, time taken and time left;
+- the next recent books;
+- **shelves**: every folder inside `/Books` on the SD card becomes a shelf button that opens it, six to a page, so a
+  card laid out as `/Books/Fantasy/…`, `/Books/Horror/…` gets a Fantasy and a Horror shelf. Swipe, or press
+  Left/Right at the end of a row, for the next page;
+- Library, File Transfer, Reading Stats and Settings.
 
-> ### ⚠️ WARNING: READ THIS BEFORE USING THE UNLOCKER ⚠️
-> 
-> **The only officially supported firmwares in the unlock tool are CrossPoint and CrossInk.**
-> 
-> Flashing any other firmware on a USB-locked device may **permanently brick the device** or leave it **permanently
-> stuck on that firmware with no recovery path**. Once USB flashing is re-locked, your only way back is via OTA, and if
-> the firmware you flashed doesn't support OTA, **there is no way out**.
+Other themes keep their own Home screens.
 
-## Install firmware
+### Quartz look everywhere
 
-### Web installer (recommended)
+With the Quartz theme, every screen uses the same look: a black rounded title bar with the clock and battery, one
+outlined segment control for tabs, and outlined rounded rows that fill black when selected.
 
-1. Connect your device to your computer via USB-C and wake/unlock the device
-2. Go to https://crosspointreader.com/#flash-tools, select your device (X3, X4, Xteink X4Pro, Seeed reTerminal Sticky, or M5PaperMono), and choose an official CrossPoint release.
+### Page settings while reading
 
-### Web installer (specific version)
+Tap the middle of the page (or press Confirm) for the Quartz page settings:
 
-1. Connect your device to your computer via USB-C and wake/unlock the device
-2. Download the firmware file for your device from [Releases](https://github.com/crosspoint-reader/crosspoint-reader/releases), or compile yourself.
-3. Go to https://crosspointreader.com/#flash-tools, select your device, click "Custom .bin" and upload the firmware file.
+- **Toolbar:** Home, Look up, Contents, Bookmark (hold for the bookmark list) and Page settings.
+- **Size, Font, Spacing, Margins and Alignment** as simple rows, with **Advanced** for everything else in
+  CrossPoint's reader settings.
+- A **timeline** at the bottom to scrub through the book.
 
-### Revert to Official Firmware
+### Fonts
 
-To revert to the official firmware, you can also flash the latest official firmware using https://crosspointreader.com/#flash-tools.
+- Built-in reading fonts: **NV Jost** (sans, default) and **Libron** (serif), from Nico Verbruggen's
+  [e-reader fonts](https://github.com/nicoverbruggen/ebook-fonts), at 12, 14, 16 and 18 pt.
+- More fonts install from the SD card; see [Custom SD-card fonts](#custom-sd-card-fonts) below. File Transfer's
+  **Fonts** page installs a whole folder of font families at once.
 
-### Command line
+### Reading stats
 
-1. Install [`esptool`](https://github.com/espressif/esptool):
+- **Reading Stats** on the device: reading time, streaks, a Reading Days calendar, when you read, and the books
+  you've finished.
+- File Transfer's **Stats** page shows the same, and `GET /api/stats` returns it as JSON
+  ([format](./docs/stats-export.md)).
+- [Quartz Reader](https://github.com/riseordie-85/QuartzReader) can import it straight from the reader
+  (address `http://quartzink.local/`).
 
-```bash
-pip install esptool
-```
+### Sleep and boot screens
 
-2. Download the firmware file for your device from the [releases page](https://github.com/crosspoint-reader/crosspoint-reader/releases).
-3. Connect your device via USB-C.
-4. Find the device port. On Linux, run `dmesg` after connecting. On macOS:
+- The QuartzInk boot screen, and the gem logo on the Dark and Light sleep screens.
+- **Settings → Wallpapers** lists your sleep images in two tabs: **Wallpapers** (`/.sleep`, used by Custom and
+  Cover + Custom) and **Overlays** (`/.sleep-overlay`, transparent PNGs drawn over the page or cover by Page
+  Overlay and Cover + Overlay). Pin one image, or Shuffle for a random one each time.
+- Overlays made for one screen size stretch to fill another device.
 
-```bash
-log stream --predicate 'subsystem == "com.apple.iokit"' --info
-```
+### File Transfer
 
-5. Flash an X3 or X4:
+- The web pages have the Quartz look, at `http://quartzink.local/`, with a tile home page.
+- **Wallpapers** uploads photos as grayscale wallpapers sized for the device and PNGs as overlays, and pins or
+  deletes them.
+- **Files** uploads whole folders with their subfolders.
+- Moving or renaming a book keeps its reading progress, stats, bookmarks and clippings.
 
-```bash
-esptool.py --chip esp32c3 --port /dev/ttyACM0 --baud 921600 write_flash 0x10000 /path/to/firmware.bin
-```
+Everything else CrossPoint does (EPUB rendering, bookmarks, clippings, dictionaries, Focus Reading, KOReader progress
+sync and more) is still here; see the [User Guide](./USER_GUIDE.md) and the [docs](./docs).
 
-   Flash an Xteink X4Pro, Seeed reTerminal Sticky, or M5PaperMono:
+---
 
-```bash
-esptool.py --chip esp32s3 --port /dev/ttyACM0 --baud 921600 write_flash 0x10000 /path/to/firmware.bin
-```
+## Install
 
-### Manual
+GitHub Actions builds QuartzInk on every push to this repository:
 
-See [Development quick start](#development-quick-start) below.
+1. Open the repo's **Actions** tab and pick the newest green **QuartzInk firmware** run.
+2. Download the artifact for your device from **Artifacts**: `quartzink-x4-pro-<commit>`,
+   `quartzink-x3-x4-<commit>` or `quartzink-picco-<commit>`.
+3. Unzip it, connect the device over USB-C, go to https://crosspointreader.com/#flash-tools, select your device,
+   click **Custom .bin** and upload the firmware file.
+
+To go back to CrossPoint, flash an official release from the same page.
+
+### USB-locked devices
+
+Some Xteink units bought from third-party stores ship with USB flashing locked. CrossPoint's
+[Xteink Unlocker](https://crosspointreader.com/#unlock-tool) only officially supports CrossPoint and CrossInk;
+flashing other firmware on a locked device can leave it stuck with no way back. Unlock and install CrossPoint first,
+then flash QuartzInk.
 
 ---
 
 ## Custom SD-card fonts
 
-On devices with external RAM enabled in CrossPoint, copy `.ttf`, `.otf`, or `.ttc` files to the SD card and select them as reader fonts. Put one file in `/fonts/` or `/.fonts/`, or put one family's files in a subfolder. See the [SD card font guide](./docs/sd-card-fonts.md) for the folder layout and styles.
+On devices with external RAM (the X4 Pro and Picco), copy `.ttf`, `.otf`, or `.ttc` files to the SD card and select
+them as reader fonts. Put one file in `/fonts/` or `/.fonts/`, or put one family's files in a subfolder. See the
+[SD card font guide](./docs/sd-card-fonts.md) for the folder layout and styles.
 
-On other devices, convert the font to `.cpfont` first. `.cpfont` files also work on devices with external RAM enabled and have better performance. No firmware reflash is needed to add fonts.
-
-To make `.cpfont` files:
-
-1. Go to https://crosspointreader.com/fonts and open the "SD-card font builder" form.
-2. Upload up to four styles (regular, bold, italic, bold-italic), set the family name, point sizes, and Unicode range.
-3. Download the generated `.cpfont` files.
-4. Copy them to your SD card under `/fonts/YourFont/` (or `/.fonts/YourFont/` to hide the folder).
-5. Select the font on the device from the font settings.
-
-Conversion runs the firmware repo's `lib/EpdFont/scripts/fontconvert_sdcard.py` script unmodified, so output matches a local host build.
+On other devices (the X3), convert the font to `.cpfont` first with the "SD-card font builder" at
+https://crosspointreader.com/fonts, then copy the files to `/fonts/YourFont/`. `.cpfont` files also work on devices
+with external RAM and are faster.
 
 ---
 
-## Documentation
+## Tips for the best reading experience
 
-- [User Guide](./USER_GUIDE.md)
-- [Web server usage](./docs/webserver.md)
-- [Web server endpoints](./docs/webserver-endpoints.md)
-- [Project scope](./SCOPE.md)
-- [Contributing docs](./docs/contributing/README.md)
-- [Touch and UI development](./docs/contributing/touch-and-ui.md) - how to build new screens on the FreeInkUI activity bases (UiListActivity and friends), plus build envs for the non-Xteink touch devices
+These devices have far less memory than a phone, so very large folders or complex EPUBs can be slower.
+
+- Keep folders under about 200 files; 50-100 per folder browses best. Split large libraries into shelves under
+  `/Books` by author, series or genre rather than putting every book in the card's root.
+- Text-first EPUBs are the best fit. Large image-heavy EPUBs, scanned books and comics may load slowly or fail under
+  memory pressure; EPUBs under 20 MB work best.
+- If an EPUB is unusually slow, try File Transfer's **Optimize EPUB** option when uploading it.
+- Use a reliable SD card and leave some free space for settings, progress, stats and book caches.
 
 ---
 
 ## Development quick start
 
-### Prerequisites
+QuartzInk uses PlatformIO. Initialize the submodules (including `freeink-sdk`) before the first build:
 
-- [pioarduino PlatformIO Core](https://github.com/pioarduino/platformio-core) or [VS Code + pioarduino IDE](https://github.com/pioarduino/pioarduino-vscode-ide)
-- Python 3.8+
-- `clang-format` 21
-- USB-C cable supporting data transfer
-
-### Setup
-
-```bash
-git clone --recursive https://github.com/crosspoint-reader/crosspoint-reader
-cd crosspoint-reader
-
-# if cloned without --recursive:
+```sh
 git submodule update --init --recursive
 ```
 
-### Nix/NixOS
-
-Nix/NixOS users can enter the development shell with either `nix develop` (flakes) or `nix-shell`:
-
-```bash
-nix develop -f nix
-# or
-nix-shell nix
-```
-
-To flash a connected ESP32-C3 device, enable PlatformIO's udev rules in your NixOS configuration:
-
-```nix
-services.udev.packages = with pkgs; [ platformio-core.udev ];
-```
-
-After rebuilding the system configuration, reconnect the device or reload udev rules.
-
-### Build / flash / monitor
-
-```bash
-pio run --target upload
-```
-
-### Contributor pre-PR checks
-
-```bash
-./bin/clang-format-fix
-pio check -e default
-pio run -e default
-```
-
-### Debugging
-
-After flashing the new features, it’s recommended to capture detailed logs from the serial port.
-
-First, make sure all required Python packages are installed:
-
-```python
-python3 -m pip install pyserial colorama matplotlib
-```
-
-After that run the script:
+Then build or flash the environment for the device:
 
 ```sh
-# For Linux
-# This was tested on Debian and should work on most Linux systems.
-python3 scripts/debugging_monitor.py
-
-# For macOS
-python3 scripts/debugging_monitor.py /dev/cu.usbmodem2101
+pio run -e default --target upload   # X3 / X4 (ESP32-C3)
+pio run -e x4pro --target upload     # X4 Pro
+pio run -e picco --target upload     # Boox Picco
 ```
 
-Minor adjustments may be required for Windows.
+See [Contributing docs](./docs/contributing/README.md) for prerequisites, tests and debugging, and
+[Web server endpoints](./docs/webserver-endpoints.md) for the File Transfer API.
 
 ---
 
-## Internals
+## Credits
 
-CrossPoint Reader is pretty aggressive about caching data down to the SD card to minimise RAM usage. The ESP32-C3 only has ~380KB of usable RAM, so we have to be careful. A lot of the decisions made in the design of the firmware were based on this constraint.
+QuartzInk is a CrossPoint project: it would not exist without
+[CrossPoint Reader](https://github.com/crosspoint-reader/crosspoint-reader) and its contributors. If you like this
+firmware, please consider [supporting them](https://app.royalty.dev/crosspoint-reader/crosspoint-reader). Its first
+version was built on [CrossInk](https://github.com/uxjulia/CrossInk) by uxjulia, whose reading stats format
+QuartzInk still reads. NV Jost, Libron and the other NV fonts are by
+[Nico Verbruggen](https://github.com/nicoverbruggen/ebook-fonts), under the SIL Open Font License.
 
-### Data caching
-
-The first time chapters of a book are loaded, they are cached to the SD card. Subsequent loads are served from the
-cache. This cache directory exists at `.crosspoint` on the SD card. The structure is as follows:
-
-```text
-.crosspoint/
-├── epub_<hash>/         # one directory per book, named by content hash
-│   ├── progress.bin     # reading position (chapter, page, etc.)
-│   ├── cover.bmp        # generated cover image
-│   ├── book.bin         # metadata: title, author, spine, TOC
-│   ├── css_rules.cache  # parsed CSS rule cache
-│   ├── img_*            # rendered image cache files
-│   └── sections/        # per-chapter layout cache
-│       ├── 0.bin
-│       ├── 1.bin
-│       └── ...
-├── settings.json        # device settings
-├── state.json           # resume/runtime state
-└── recent.json          # recent books list
-```
-
-Removing `/.crosspoint` clears all cached metadata and forces a full regeneration on next open. Book deletes, overwrites, and moves done through the firmware or web UI clear or re-key matching caches; manual SD-card edits may leave stale cache directories behind.
-
-For more details on the internal file structures, see the [file formats document](./docs/file-formats.md).
-
----
-
-## Contributing
-
-Contributions are welcome. If you're new to the codebase, start with the [contributing docs](./docs/contributing/README.md). For things to work on, check the [ideas discussion board](https://github.com/crosspoint-reader/crosspoint-reader/discussions/categories/ideas) — leave a comment before starting so we don't duplicate effort.
-
-Everyone here is a volunteer, so please be respectful and patient. For governance and community expectations, see [GOVERNANCE.md](./GOVERNANCE.md).
-
----
-
-## Community forks
-
-One of the best things about open source is that anyone can take the code in a different direction. If you need something outside CrossPoint's [scope](./SCOPE.md), check out the community forks:
-
-- [CrossInk](https://github.com/uxjulia/CrossInk) — UX focused with minimal reading stats and broader customizations for the reading experience.
-
-- [papyrix-reader](https://github.com/bigbag/papyrix-reader) — Adds FB2 and MD format support. Actively maintained with Arabic script support. Custom themes.
-
-- [inx](https://github.com/obijuankenobiii/inx) — Completely reimagines the user interface with tabbed navigation.
-
-- [Witch(hunt) Reader](https://github.com/jpirnay/witchhunt-reader) — More faithful CSS styling and background work for slightly snappier interaction. Weather information panel. Markdown support.
-
-**Note:** Many of these features will make their way into CrossPoint over time. Each project chooses its own priorities and tradeoffs.
-
-Want to build your own device? Be sure to check out the [Silkscreen](https://silkscreenreader.com) project or [OnePage Reader](https://github.com/MoveCall/onepage-reader).
-
----
-
-CrossPoint Reader is **not affiliated with Xteink or any device manufacturer**.
+QuartzInk is released under the same [MIT License](./LICENSE) as CrossPoint, and is **not affiliated with Xteink,
+Boox or any device manufacturer**.
