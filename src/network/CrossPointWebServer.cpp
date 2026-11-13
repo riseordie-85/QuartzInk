@@ -50,6 +50,7 @@
 #include "WebDAVHandler.h"
 #include "WifiCredentialStore.h"
 #include "WifiPowerSaveGuard.h"
+#include "html/ExtrasPageHtml.generated.h"
 #include "html/FilesPageHtml.generated.h"
 #include "html/FontsPageHtml.generated.h"
 #include "html/HomePageHtml.generated.h"
@@ -67,6 +68,7 @@
 #include "html/js/epub_optimizerJs.generated.h"
 #include "html/js/jszip_minJs.generated.h"
 #include "html/js/plugin_hostJs.generated.h"
+#include "html/js/qz_imagesJs.generated.h"
 #include "util/BookCacheUtils.h"
 #include "util/DictionaryRegistry.h"
 #include "util/FirmwareIdentity.h"
@@ -340,6 +342,17 @@ class CrossPointWebServer::RouteHandler final : public RequestHandler {
          },
          nullptr},
         {"/stats", HTTP_GET, [](S& s) { s.handleStatsPage(); }, nullptr},
+        {"/extras", HTTP_GET,
+         [](S& s) {
+           sendStaticContent(s.server.get(), ExtrasPageHtml, sizeof(ExtrasPageHtml), ExtrasPageHtmlETag, "text/html");
+         },
+         nullptr},
+        {"/js/qz-images.js", HTTP_GET,
+         [](S& s) {
+           sendStaticContent(s.server.get(), qz_imagesJs, sizeof(qz_imagesJs), qz_imagesJsETag,
+                             "application/javascript");
+         },
+         nullptr},
         {"/wallpapers", HTTP_GET, [](S& s) { s.handleWallpapersPage(); }, nullptr},
         {"/api/wallpapers", HTTP_GET, [](S& s) { s.handleWallpaperInfo(); }, nullptr},
         {"/api/wallpapers/pin", HTTP_POST, [](S& s) { s.handleWallpaperPin(); }, nullptr},

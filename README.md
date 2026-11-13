@@ -94,6 +94,9 @@ Tap the middle of the page (or press Confirm) for the Quartz page settings:
 - The web pages have the Quartz look, at `http://quartzink.local/`, with a tile home page.
 - **Wallpapers** uploads photos as grayscale wallpapers sized for the device and PNGs as overlays, and pins or
   deletes them.
+- **Extras** installs wallpapers, overlays and fonts from the [Quartz gallery](https://quartz.timcordova.com/extras/)
+  with one tap each, sized for the reader's screen. Your phone or computer does the downloading, so the reader
+  needs to be on your home Wi-Fi rather than its own hotspot.
 - **Files** uploads whole folders with their subfolders.
 - Moving or renaming a book keeps its reading progress, stats, bookmarks and clippings.
 

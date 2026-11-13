@@ -9,6 +9,7 @@
     <a href="/wallpapers">Wallpapers</a>
     <a href="/fonts">Fonts</a>
     <a href="/stats">Stats</a>
+    <a href="/extras">Extras</a>
     <a href="/settings">Settings</a>
     <a href="/plugins">Plugins</a>
   </nav>
@@ -19,7 +20,7 @@
         document.querySelectorAll('.qz-nav a[href="/plugins"]').forEach((a) => a.remove());
       }
       const titles = {
-        '/': '', '/files': 'Files', '/wallpapers': 'Wallpapers', '/fonts': 'Fonts', '/stats': 'Reading Stats',
+        '/': '', '/files': 'Files', '/wallpapers': 'Wallpapers', '/fonts': 'Fonts', '/stats': 'Reading Stats', '/extras': 'Extras',
         '/settings': 'Settings', '/plugins': 'Plugins', '/plugins-run': 'Plugins',
       };
       const path = location.pathname.replace(/\/+$/, '') || '/';

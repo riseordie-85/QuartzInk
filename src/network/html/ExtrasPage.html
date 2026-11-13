@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Extras - QuartzInk</title>
+    <link rel="stylesheet" href="/assets/web.css" />
+    <link rel="icon" type="image/png" href="/assets/logo.png" />
+    <link rel="preload" href="/assets/jost.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content="#000000" />
+    <style>
+h2 {
+  font-size: 1.3em;
+  margin: 0 0 10px;
+}
+.qz-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.qz-row h2 {
+  margin: 0;
+}
+.qz-seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 3px solid #000;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+.qz-seg button {
+  font: inherit;
+  font-weight: 700;
+  padding: 12px 6px;
+  border: none;
+  border-left: 2px solid #000;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  min-height: 48px;
+}
+.qz-seg button:first-child {
+  border-left: none;
+}
+.qz-seg button.active {
+  background: #000;
+  color: #fff;
+}
+.qz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+.qz-grid.fonts {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.qz-item {
+  border: 3px solid #000;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.qz-item-img {
+  aspect-ratio: 3 / 5;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 3px solid #000;
+  color: var(--label-color);
+  font-size: 0.85em;
+  text-align: center;
+  padding: 0;
+}
+.overlay .qz-item-img {
+  background: repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+}
+.fonts .qz-item-img {
+  aspect-ratio: 12 / 5;
+}
+.qz-item-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.qz-item-name {
+  padding: 8px 10px 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qz-item-meta {
+  padding: 0 10px;
+  color: var(--label-color);
+  font-size: 0.8em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qz-item-meta a {
+  color: inherit;
+}
+.qz-item-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 8px;
+  margin-top: auto;
+}
+.qz-item-actions.two {
+  grid-template-columns: 1fr 1fr;
+}
+.qz-item-actions .qz-btn {
+  padding: 8px 4px;
+  min-width: 0;
+  min-height: 40px;
+  font-size: 0.9em;
+}
+.qz-item-state {
+  padding: 0 10px;
+  font-size: 0.8em;
+  min-height: 1.2em;
+}
+.qz-item-state.error {
+  color: var(--danger-color);
+}
+.qz-notice {
+  border: 3px dashed #000;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+@media (max-width: 600px) {
+  .qz-grid,
+  .qz-grid.fonts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .qz-grid.fonts {
+    grid-template-columns: 1fr;
+  }
+}
+    </style>
+  </head>
+  <body class="web-ui">
+    <!--#include file="shared/Header.html.inc" -->
+<main class="page-content">
+<section class="card">
+  <div class="qz-row">
+    <h2>Gallery</h2>
+    <a class="qz-btn" href="https://quartz.timcordova.com/extras/" target="_blank" rel="noopener noreferrer">Open on the web</a>
+  </div>
+  <p class="qz-hint">Wallpapers, overlays and fonts from quartz.timcordova.com. Install sends them straight to this reader, sized for its screen.</p>
+  <div class="qz-seg" id="kindSeg" role="tablist" aria-label="Kinds of extras">
+    <button type="button" role="tab" data-kind="wallpaper" class="active" aria-selected="true">Wallpapers</button>
+    <button type="button" role="tab" data-kind="overlay" aria-selected="false">Overlays</button>
+    <button type="button" role="tab" data-kind="font" aria-selected="false">Fonts</button>
+  </div>
+  <p class="qz-hint" id="kindHint"></p>
+  <div class="qz-notice" id="notice" hidden></div>
+  <div class="qz-grid" id="grid" aria-live="polite"></div>
+</section>
+</main>
+<!--#include file="shared/Footer.html.inc" -->
+  <script src="/js/qz-images.js"></script>
+  <script>
+// The catalog the upload page on quartz.timcordova.com keeps. This page only
+// reads data from there (JSON, images, font files); installing goes through
+// the reader's own upload routes.
+const CATALOG_URL = 'https://quartz.timcordova.com/extras/catalog.json';
+const SLEEP_MODE_NAMES = { 2: 'Custom', 4: 'Cover + Custom', 7: 'Page Overlay', 8: 'Cover + Overlay' };
+const HINTS = {
+  wallpaper: 'Shown full screen by the Custom and Cover + Custom sleep screens.',
+  overlay: 'Drawn over the page or cover by the Page Overlay and Cover + Overlay sleep screens.',
+  font: 'Reading fonts. After installing, pick them in the reader’s font settings.',
+};
+
+let catalog = [];
+let kind = 'wallpaper';
+let device = null; // { screen, pinned, mode, folders: {wallpapers, overlays}, names: {wallpapers:Set, overlays:Set} }
+let fonts = { vectorFonts: false, maxFamilies: 0, families: new Set() };
+const busy = new Set(); // item ids being installed
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function joinPath(folder, name) {
+  return (folder.endsWith('/') ? folder : folder + '/') + name;
+}
+
+function extOf(name) {
+  const dot = name.lastIndexOf('.');
+  return dot < 0 ? '' : name.substring(dot + 1).toLowerCase();
+}
+
+async function postForm(url, fields) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(fields),
+  });
+  const text = await response.text();
+  if (!response.ok) throw new Error(text || response.statusText);
+  return text;
+}
+
+// ---- What's on the reader ----
+
+async function listNames(folder) {
+  const response = await fetch('/api/files?path=' + encodeURIComponent(folder) + '&_=' + Date.now());
+  if (!response.ok) return [];
+  return (await response.json()).filter((e) => !e.isDirectory).map((e) => e.name);
+}
+
+async function loadDevice() {
+  const info = await (await fetch('/api/wallpapers?_=' + Date.now())).json();
+  const names = { wallpapers: new Set(), overlays: new Set() };
+  for (const group of ['wallpapers', 'overlays']) {
+    for (const folder of info[group].folders) {
+      for (const name of await listNames(folder)) names[group].add(name.toLowerCase());
+    }
+  }
+  device = { ...info, names };
+  try {
+    const data = await (await fetch('/api/fonts?_=' + Date.now())).json();
+    fonts = {
+      vectorFonts: !!data.vectorFonts,
+      maxFamilies: data.maxFamilies || 0,
+      families: new Set((data.families || []).map((f) => f.name)),
+    };
+  } catch (error) {
+    console.error('Font list failed:', error);
+  }
+}
+
+// ---- Items ----
+
+// The name an image gets on the card: the item's name, so the reader's
+// Wallpapers list reads well.
+function deviceFileName(item) {
+  const group = item.type === 'overlay' ? 'overlays' : 'wallpapers';
+  const source = item.files[0] ? item.files[0].name : 'image';
+  const ext = item.type === 'overlay' || extOf(source) === 'bmp' ? '.' + extOf(source) : '.bmp';
+  return { group, name: QzImages.safeName(item.name, ext, new Set()) };
+}
+
+function installedPath(item) {
+  if (!device || item.type === 'font') return null;
+  const { group, name } = deviceFileName(item);
+  if (!device.names[group].has(name.toLowerCase())) return null;
+  return joinPath(device[group].upload, name);
+}
+
+// The font files this reader can use: TTF/OTF with external RAM, else .cpfont.
+function fontFilesFor(item) {
+  const vector = item.files.filter((f) => ['ttf', 'otf'].includes(extOf(f.name)));
+  const packs = item.files.filter((f) => extOf(f.name) === 'cpfont');
+  if (fonts.vectorFonts && vector.length) return vector;
+  return packs;
+}
+
+// Family folder on the card, as the Fonts page names it: [A-Za-z0-9_-].
+function familyOf(item) {
+  return (item.family || item.name).replace(/[^A-Za-z0-9_-]/g, '_');
+}
+
+function itemState(item) {
+  if (busy.has(item.id)) return { label: 'Installing…', disabled: true };
+  if (item.type === 'font') {
+    const family = familyOf(item);
+    if (fonts.families.has(family)) return { label: 'Installed', disabled: true, done: true };
+    if (!fontFilesFor(item).length) {
+      return { label: fonts.vectorFonts ? 'No files' : 'Needs a .cpfont version', disabled: true };
+    }
+    if (fonts.maxFamilies && fonts.families.size >= fonts.maxFamilies) {
+      return { label: 'Font slots full', disabled: true };
+    }
+    return { label: 'Install' };
+  }
+  const path = installedPath(item);
+  if (!path) return { label: 'Install' };
+  return { label: path === device.pinned ? 'Pinned' : 'Use', path, done: true };
+}
+
+function card(item) {
+  const article = el('article', 'qz-item');
+  article.dataset.id = item.id;
+  const frame = el('div', 'qz-item-img');
+  if (item.preview) {
+    const img = el('img');
+    img.src = new URL(item.preview, CATALOG_URL).href;
+    img.alt = item.name;
+    img.loading = 'lazy';
+    frame.appendChild(img);
+  } else {
+    frame.textContent = item.type === 'font' ? item.family || item.name : 'No preview';
+  }
+  article.appendChild(frame);
+  article.appendChild(el('div', 'qz-item-name', item.name));
+  const meta = el('div', 'qz-item-meta');
+  if (item.credit) {
+    meta.append('By ');
+    if (item.creditUrl) {
+      const a = el('a', '', item.credit);
+      a.href = item.creditUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      meta.appendChild(a);
+    } else {
+      meta.append(item.credit);
+    }
+  }
+  if (item.license) meta.append((item.credit ? ' · ' : '') + item.license);
+  article.appendChild(meta);
+  article.appendChild(el('div', 'qz-item-state'));
+
+  const state = itemState(item);
+  const actions = el('div', 'qz-item-actions');
+  const button = el('button', 'qz-btn' + (state.done ? ' primary' : ''), state.label);
+  button.type = 'button';
+  button.disabled = !!state.disabled;
+  if (state.path) {
+    button.onclick = () => usePinned(item, state.path);
+  } else if (!state.disabled) {
+    button.onclick = () => install(item);
+  }
+  actions.appendChild(button);
+  article.appendChild(actions);
+  return article;
+}
+
+function render() {
+  for (const button of document.querySelectorAll('#kindSeg button')) {
+    const on = button.dataset.kind === kind;
+    button.classList.toggle('active', on);
+    button.setAttribute('aria-selected', on ? 'true' : 'false');
+  }
+  let hint = HINTS[kind];
+  if (device && kind !== 'font') {
+    const modeName = SLEEP_MODE_NAMES[device.mode];
+    const shows = kind === 'overlay' ? [7, 8].includes(device.mode) : [2, 4].includes(device.mode);
+    if (!shows) hint += ' Use switches the sleep screen to one that shows it.';
+    else if (modeName) hint += ' Your sleep screen is ' + modeName + '.';
+  }
+  document.getElementById('kindHint').textContent = hint;
+  const grid = document.getElementById('grid');
+  grid.className = 'qz-grid' + (kind === 'font' ? ' fonts' : kind === 'overlay' ? ' overlay' : '');
+  const shown = catalog.filter((item) => item.type === kind);
+  grid.replaceChildren(...shown.map(card));
+  if (catalog.length && !shown.length) {
+    grid.appendChild(el('p', 'qz-hint', 'Nothing here yet.'));
+  }
+}
+
+function setItemStatus(item, text, error) {
+  const node = document.querySelector('.qz-item[data-id="' + CSS.escape(item.id) + '"] .qz-item-state');
+  if (!node) return;
+  node.textContent = text;
+  node.classList.toggle('error', !!error);
+}
+
+async function download(file) {
+  const response = await fetch(new URL(file.url, CATALOG_URL).href);
+  if (!response.ok) throw new Error('Download failed (' + response.status + ')');
+  return response.blob();
+}
+
+async function installImage(item) {
+  const source = item.files[0];
+  const blob = await download(source);
+  const { group, name } = deviceFileName(item);
+  const file = new File([blob], item.name + '.' + extOf(source.name), { type: blob.type });
+  setItemStatus(item, 'Sizing for this screen…');
+  const ready = await QzImages.prepare(file, {
+    screen: device.screen,
+    fit: 'fill',
+    kind: item.type,
+    taken: device.names,
+  });
+  if (!device[group].folders.includes(device[group].upload)) {
+    await postForm('/api/wallpapers/folder', { kind: group });
+  }
+  await QzImages.uploadBlob(device[group].upload, ready.blob, ready.name, (fraction) => {
+    setItemStatus(item, 'Uploading ' + Math.round(fraction * 100) + '%');
+  });
+  if (ready.name !== name) console.log('[Extras] Saved as', ready.name);
+}
+
+async function installFont(item) {
+  const family = familyOf(item);
+  const files = fontFilesFor(item);
+  let n = 0;
+  for (const file of files) {
+    n += 1;
+    setItemStatus(item, 'Font file ' + n + ' of ' + files.length + '…');
+    const blob = await download(file);
+    const form = new FormData();
+    form.append('family', family);
+    form.append('file', blob, file.name);
+    const response = await fetch('/api/fonts/upload', { method: 'POST', body: form });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.error || 'The reader refused ' + file.name);
+  }
+}
+
+async function install(item) {
+  busy.add(item.id);
+  render();
+  try {
+    setItemStatus(item, 'Downloading…');
+    if (item.type === 'font') {
+      await installFont(item);
+    } else {
+      await installImage(item);
+    }
+    busy.delete(item.id);
+    await loadDevice();
+    render();
+    setItemStatus(item, 'Installed.');
+  } catch (error) {
+    busy.delete(item.id);
+    render();
+    setItemStatus(item, error.message || String(error), true);
+  }
+}
+
+async function usePinned(item, path) {
+  try {
+    await postForm('/api/wallpapers/pin', { path: path === device.pinned ? '' : path });
+    await loadDevice();
+    render();
+    setItemStatus(item, device.pinned === path ? 'Shown on every sleep.' : 'Back to random.');
+  } catch (error) {
+    setItemStatus(item, error.message, true);
+  }
+}
+
+function showNotice(text) {
+  const notice = document.getElementById('notice');
+  notice.hidden = !text;
+  notice.textContent = text || '';
+}
+
+for (const button of document.querySelectorAll('#kindSeg button')) {
+  button.onclick = () => {
+    kind = button.dataset.kind;
+    render();
+  };
+}
+
+(async function start() {
+  render();
+  showNotice('Loading the gallery…');
+  try {
+    await loadDevice();
+  } catch (error) {
+    showNotice('Could not read this reader: ' + error.message);
+    return;
+  }
+  try {
+    const response = await fetch(CATALOG_URL, { cache: 'no-cache' });
+    if (!response.ok) throw new Error(response.status + ' ' + response.statusText);
+    catalog = (await response.json()).items || [];
+    showNotice(catalog.length ? '' : 'The gallery is empty for now.');
+  } catch (error) {
+    // The browser, not the reader, reaches the internet: on the reader's own
+    // hotspot there is no way out.
+    showNotice(
+      'Could not reach quartz.timcordova.com. The gallery needs this phone or computer online: connect the reader ' +
+        'to your home Wi-Fi (not its own hotspot) and open it again.'
+    );
+  }
+  render();
+})();
+  </script>
+  </body>
+</html>

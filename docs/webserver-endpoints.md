@@ -22,6 +22,8 @@ the IP address shown on the device screen.
 | `GET` | `/plugins` | Plugins page (web settings of SD-card plugins) |
 | `GET` | `/wallpapers` | Sleep wallpapers and overlays page |
 | `GET` | `/stats` | Reading stats page (reads `/api/stats`) |
+| `GET` | `/extras` | Extras gallery: installs wallpapers, overlays and fonts from quartz.timcordova.com (the browser downloads them; the reader never goes online) |
+| `GET` | `/js/qz-images.js` | Sizes images for the sleep screens, shared by the Wallpapers and Extras pages |
 | `GET` | `/js/jszip.min.js` | JavaScript asset used by the file manager |
 | `GET` | `/js/epub-optimizer.js` | File manager EPUB optimizer, loaded with JSZip only when needed |
 | `GET` | `/js/plugin-host.js` | Browser plugin host shared by the Plugins, File Manager, and `/plugins-run` pages |
