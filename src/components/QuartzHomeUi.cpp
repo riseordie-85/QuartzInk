@@ -19,7 +19,7 @@
 #include "QuartzChrome.h"
 #include "UITheme.h"
 #include "components/icons/listIcons.h"
-#include "components/icons/quartzHomeIcons.h"
+#include "components/icons/quartzIcons.h"
 #include "stats/BookReadingStats.h"
 
 namespace fui = freeink::ui;

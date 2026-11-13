@@ -21,6 +21,8 @@ struct MenuResult {
   int action = -1;
   uint8_t orientation = 0;
   uint8_t pageTurnOption = 0;
+  int16_t value = -1;            // Quartz menu: action argument (seek permille)
+  bool settingsChanged = false;  // Quartz menu: text settings were saved; relayout
 };
 
 struct ChapterResult {

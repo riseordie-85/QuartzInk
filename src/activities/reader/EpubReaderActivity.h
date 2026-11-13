@@ -174,6 +174,14 @@ class EpubReaderActivity final : public ReaderActivity {
   ChapterPosition chapterPosition() const;
   int bookPercentFor(const ChapterPosition& position) const;
   void openReaderMenu();
+  // Quartz theme: QuartzInk's top-bar menu, timeline and page settings sheet.
+  void openQuartzMenu();
+  // Drops the laid-out chapter and remembers the position, so the next render
+  // lays it out again with new text settings.
+  void relayoutForTextSettings();
+  // Set by the Quartz menu's Advanced link: the next openReaderMenu() shows
+  // CrossPoint's full menu instead of the Quartz one.
+  bool fullMenuOnce = false;
   // Toolbar reader menu (see Overlay above).
   bool usesToolbarMenu() const;
   void openOverlay(Overlay target);

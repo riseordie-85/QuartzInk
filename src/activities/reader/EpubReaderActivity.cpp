@@ -22,6 +22,7 @@
 #include <functional>
 #include <iterator>
 #include <limits>
+#include <utility>
 
 #include "../../util/BookmarkFile.h"
 #include "BookmarkEntry.h"
@@ -42,6 +43,7 @@
 #include "MappedInputManager.h"
 #include "ProgressMapper.h"
 #include "QrDisplayActivity.h"
+#include "QuartzReaderMenuActivity.h"
 #include "ReaderActivity.h"
 #include "ReaderFontSizes.h"
 #include "ReaderLineSpacing.h"
@@ -55,6 +57,7 @@
 #include "activities/settings/TextSettingsActivity.h"
 #include "clippings/ClippingText.h"
 #include "clippings/ClippingsManager.h"
+#include "components/QuartzChrome.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
 #include "util/BookmarkUtil.h"
@@ -338,6 +341,10 @@ int EpubReaderActivity::bookPercentFor(const ChapterPosition& position) const {
 
 void EpubReaderActivity::openReaderMenu() {
   pendingManualTurn = 0;
+  if (QuartzChrome::active() && !std::exchange(fullMenuOnce, false)) {
+    openQuartzMenu();
+    return;
+  }
   if (usesToolbarMenu()) {
     // Reached from a child activity's result handler (footnotes, bookmarks,
     // go-to-percent... cancelled back to the menu), so the framebuffer holds
@@ -1172,6 +1179,80 @@ int EpubReaderActivity::currentTocIndex() const {
   return std::max(0, cachedSection.getTocIndexForPage(nextPageNumber));
 }
 
+void EpubReaderActivity::relayoutForTextSettings() {
+  RenderLock lock;
+  if (section) {
+    rememberCurrentContentOffset();
+    cachedSpineIndex = currentSpineIndex;
+    cachedChapterTotalPageCount = section->pageCount;
+    nextPageNumber = section->currentPage;
+  }
+  section.reset();
+}
+
+void EpubReaderActivity::openQuartzMenu() {
+  const ChapterPosition position = chapterPosition();
+  QuartzReaderMenuActivity::BookInfo info;
+  info.title = epub->getTitle();
+  int tocIndex;
+  {
+    RenderLock lock;
+    tocIndex = currentTocIndex();
+  }
+  if (tocIndex >= 0) info.chapter = epub->getTocItem(tocIndex).title;
+  info.chapterPage = static_cast<uint32_t>(std::max(0, position.displayPage()));
+  info.chapterPageCount = static_cast<uint32_t>(std::max(0, position.totalPages));
+  info.bookProgressPercent =
+      std::clamp(epub->calculateProgress(currentSpineIndex, position.chapterFraction()), 0.0f, 1.0f) * 100.0f;
+  info.pageBookmarked = currentPageBookmarked;
+
+  startActivityForResult(std::make_unique<QuartzReaderMenuActivity>(renderer, mappedInput, std::move(info)),
+                         [this](const ActivityResult& result) {
+                           const auto& menu = std::get<MenuResult>(result.data);
+                           if (menu.settingsChanged) {
+                             {
+                               RenderLock lock;
+                               sdFontSystem.ensureLoaded(renderer);  // the family or size may have changed
+                             }
+                             relayoutForTextSettings();
+                           }
+                           using Action = QuartzReaderMenuActivity::Action;
+                           using MA = EpubReaderMenuActivity::MenuAction;
+                           switch (static_cast<Action>(menu.action)) {
+                             case Action::Home:
+                               onReaderMenuConfirm(MA::GO_HOME);
+                               return;
+                             case Action::Contents:
+                               onReaderMenuConfirm(MA::SELECT_CHAPTER);
+                               return;
+                             case Action::ToggleBookmark:
+                               onReaderMenuConfirm(MA::TOGGLE_BOOKMARK);
+                               return;
+                             case Action::Bookmarks:
+                               onReaderMenuConfirm(MA::BOOKMARKS);
+                               return;
+                             case Action::Lookup:
+                               onReaderMenuConfirm(MA::DICTIONARY);
+                               return;
+                             case Action::MoreFonts:
+                               onReaderMenuConfirm(MA::TEXT_SETTINGS);
+                               return;
+                             case Action::FullMenu:
+                               fullMenuOnce = true;
+                               openReaderMenu();
+                               return;
+                             case Action::Seek:
+                               // Permille from the timeline; the reader jumps by whole percent.
+                               jumpToPercent(std::clamp((menu.value + 5) / 10, 0, 100));
+                               return;
+                             case Action::None:
+                             default:
+                               requestUpdate();
+                               return;
+                           }
+                         });
+}
+
 void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction action) {
   auto progressChangeResultHandler = [this](const ActivityResult& result) {
     loadCachedBookmarks();
@@ -1230,16 +1311,7 @@ void EpubReaderActivity::onReaderMenuConfirm(EpubReaderMenuActivity::MenuAction 
       startActivityForResult(std::make_unique<TextSettingsActivity>(renderer, mappedInput, &sdFontSystem.registry(),
                                                                     TextSettingsActivity::Tab::Family),
                              [this](const ActivityResult&) {
-                               {
-                                 RenderLock lock;
-                                 if (section) {
-                                   rememberCurrentContentOffset();
-                                   cachedSpineIndex = currentSpineIndex;
-                                   cachedChapterTotalPageCount = section->pageCount;
-                                   nextPageNumber = section->currentPage;
-                                 }
-                                 section.reset();
-                               }
+                               relayoutForTextSettings();
                                openReaderMenu();
                              });
       break;
@@ -2528,7 +2600,9 @@ static_assert(std::size(kAlignIds) == CrossPointSettings::PARAGRAPH_ALIGNMENT_CO
 bool EpubReaderActivity::usesToolbarMenu() const {
   // Both board classes drive the same chrome: touch through the FreeInkUI tap
   // targets, buttons through the focused-tool pill and the panel cursor.
-  return SETTINGS.readerMenuStyle == CrossPointSettings::READER_MENU_TOOLBAR;
+  // The Quartz theme brings its own reader menu (openQuartzMenu), so the
+  // toolbar overlay stays closed while it is selected.
+  return SETTINGS.readerMenuStyle == CrossPointSettings::READER_MENU_TOOLBAR && !QuartzChrome::active();
 }
 
 std::string EpubReaderActivity::currentChapterTitle() const {
