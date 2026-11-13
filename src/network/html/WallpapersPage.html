@@ -521,12 +521,16 @@ function drawToScreen(img, fit, background) {
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-  const scale =
-    fit === 'fit'
-      ? Math.min(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight)
-      : Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
-  const w = img.naturalWidth * scale;
-  const h = img.naturalHeight * scale;
+  let w = canvas.width;
+  let h = canvas.height;
+  if (fit !== 'stretch') {
+    const scale =
+      fit === 'fit'
+        ? Math.min(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight)
+        : Math.max(canvas.width / img.naturalWidth, canvas.height / img.naturalHeight);
+    w = img.naturalWidth * scale;
+    h = img.naturalHeight * scale;
+  }
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
   return canvas;
@@ -596,8 +600,17 @@ async function prepare(file) {
   const img = await loadImage(file);
   if (isPng(file.name) || file.type === 'image/png') {
     const name = safeName(file.name, '.png', existingNames.overlays);
-    // Keep transparency. Only shrink PNGs that are bigger than the screen.
-    const fits = img.naturalWidth <= info.screen.width && img.naturalHeight <= info.screen.height;
+    // Keep transparency. An overlay drawn for a full screen (close to this
+    // one's shape, like a 480x800 frame on the X3's 528x792) is stretched to
+    // exactly this screen: shrinking it to fit would bake empty strips into
+    // the file. Exact-size PNGs go up unchanged; others shrink to fit.
+    const { width: sw, height: sh } = info.screen;
+    if (img.naturalWidth === sw && img.naturalHeight === sh) return { group: 'overlays', blob: file, name };
+    const shapeOff = Math.abs((img.naturalWidth / img.naturalHeight) / (sw / sh) - 1);
+    if (shapeOff <= 0.12) {
+      return { group: 'overlays', blob: await canvasToPng(drawToScreen(img, 'stretch', null)), name };
+    }
+    const fits = img.naturalWidth <= sw && img.naturalHeight <= sh;
     if (fits) return { group: 'overlays', blob: file, name };
     return { group: 'overlays', blob: await canvasToPng(drawToScreen(img, 'fit', null)), name };
   }
