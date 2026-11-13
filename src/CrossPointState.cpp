@@ -38,6 +38,7 @@ void CrossPointState::setSleepOverlayLCG(uint32_t seed, uint32_t state, uint16_t
 
 void CrossPointState::toJson(JsonDocument& doc) const {
   doc["openEpubPath"] = openEpubPath;
+  if (!pinnedSleepImage.empty()) doc["pinnedSleepImage"] = pinnedSleepImage;
   doc["sleepLcgCount"] = sleepLcgCount;
   doc["sleepLcgState"] = sleepLcgState;
   doc["sleepOverlayLcgCount"] = sleepOverlayLcgCount;
@@ -49,6 +50,7 @@ void CrossPointState::toJson(JsonDocument& doc) const {
 
 bool CrossPointState::fromJson(JsonVariantConst doc) {
   openEpubPath = doc["openEpubPath"] | "";
+  pinnedSleepImage = doc["pinnedSleepImage"] | "";
 
   sleepLcgCount = doc["sleepLcgCount"] | static_cast<uint32_t>(0);
   sleepLcgState = doc["sleepLcgState"] | static_cast<uint32_t>(0);

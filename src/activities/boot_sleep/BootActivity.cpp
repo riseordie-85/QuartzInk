@@ -3,8 +3,9 @@
 #include <GfxRenderer.h>
 #include <I18n.h>
 
+#include "components/QuartzLogoDraw.h"
 #include "fontIds.h"
-#include "images/Logo120.h"
+#include "images/QuartzLogo.h"
 
 void BootActivity::onEnter() {
   Activity::onEnter();
@@ -13,9 +14,12 @@ void BootActivity::onEnter() {
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
-  renderer.drawImage(Logo120, (pageWidth - 120) / 2, (pageHeight - 120) / 2, 120, 120);
-  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 70, tr(STR_CROSSPOINT), true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 95, tr(STR_BOOTING));
+  (void)pageWidth;
+  // QuartzInk: the gem logo and wordmark, with the fork credit and version along the bottom.
+  const int logoTop = (pageHeight - QUARTZ_LOGO_HEIGHT) / 2 - 50;
+  QuartzChrome::drawLogo(renderer, logoTop);
+  renderer.drawCenteredText(SMALL_FONT_ID, logoTop + QUARTZ_LOGO_HEIGHT + 24, tr(STR_BOOTING));
+  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 56, tr(STR_QZ_FORK_LINE));
   renderer.drawCenteredText(SMALL_FONT_ID, pageHeight - 30, CROSSPOINT_VERSION);
   renderer.displayBuffer();
 }

@@ -14,6 +14,9 @@ class CrossPointState : public PersistableStore<CrossPointState> {
   static constexpr uint8_t SLEEP_AVOID_REPEAT_LOOKBACK = 5;
 
   std::string openEpubPath;
+  // QuartzInk: a sleep image chosen to show every time instead of a random one.
+  // In the overlay folder it is used by the overlay modes, otherwise by Custom.
+  std::string pinnedSleepImage;
   uint32_t sleepLcgCount = 0;
   uint32_t sleepLcgState = 0;
   uint32_t sleepOverlayLcgCount = 0;

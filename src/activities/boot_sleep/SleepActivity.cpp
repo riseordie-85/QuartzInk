@@ -14,6 +14,7 @@
 #include <Memory.h>
 #include <PNGdec.h>
 #include <Xtc.h>
+#include <strings.h>
 
 #include <algorithm>
 #include <cmath>
@@ -26,10 +27,11 @@
 #include "CrossPointSettings.h"
 #include "CrossPointState.h"
 #include "activities/reader/ReaderUtils.h"
+#include "components/QuartzLogoDraw.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
-#include "images/Logo120.h"
 #include "images/MoonIcon.h"
+#include "images/QuartzLogo.h"
 
 namespace {
 // Metalio: B/W sleep images use the full 0xF7 waveform instead of HALF (two
@@ -68,6 +70,22 @@ constexpr char TRANSPARENT_SLEEP_ROOT_BMP[] = "/sleep-overlay.bmp";
 constexpr char TRANSPARENT_SLEEP_ROOT_PNG[] = "/sleep-overlay.png";
 constexpr char TRANSPARENT_SLEEP_DIR[] = "/.sleep-overlay";
 constexpr char TRANSPARENT_SLEEP_LEGACY_DIR[] = "/sleep-overlay";
+
+// QuartzInk's pinned sleep image (APP_STATE.pinnedSleepImage), when it still
+// exists and belongs to the requested kind: overlay-folder files for the
+// overlay modes, everything else for Custom.
+bool pinnedSleepImage(const bool overlay, std::string& out) {
+  const std::string& pinned = APP_STATE.pinnedSleepImage;
+  if (pinned.empty() || !Storage.exists(pinned.c_str())) return false;
+  const auto under = [&pinned](const char* dir) {
+    const size_t n = std::strlen(dir);
+    return pinned.size() > n + 1 && strncasecmp(pinned.c_str(), dir, n) == 0 && pinned[n] == '/';
+  };
+  const bool inOverlayFolder = under(TRANSPARENT_SLEEP_DIR) || under(TRANSPARENT_SLEEP_LEGACY_DIR);
+  if (inOverlayFolder != overlay) return false;
+  out = pinned;
+  return true;
+}
 constexpr size_t MAX_SLEEP_FILE_NAME_LEN = 256;
 constexpr uint8_t MIN_VISIBLE_ALPHA = 8;
 
@@ -802,6 +820,8 @@ bool SleepActivity::renderCustomSleepBmp(const std::string& path) const {
 }
 
 void SleepActivity::renderCustomSleepScreen() const {
+  std::string pinned;
+  if (pinnedSleepImage(false, pinned) && renderCustomSleepBmp(pinned)) return;
   // /sleep.bmp on the SD root takes priority over both custom sleep directories.
   if (renderCustomSleepBmp("/sleep.bmp")) return;
 
@@ -824,9 +844,11 @@ void SleepActivity::renderDefaultSleepScreen() const {
   const auto pageHeight = renderer.getScreenHeight();
 
   renderer.clearScreen();
-  renderer.drawImage(Logo120, (pageWidth - 120) / 2, (pageHeight - 120) / 2, 120, 120);
-  renderer.drawCenteredText(UI_10_FONT_ID, pageHeight / 2 + 70, tr(STR_CROSSPOINT), true, EpdFontFamily::BOLD);
-  renderer.drawCenteredText(SMALL_FONT_ID, pageHeight / 2 + 95, tr(STR_SLEEPING));
+  (void)pageWidth;
+  // QuartzInk's gem logo and wordmark.
+  const int logoTop = (pageHeight - QUARTZ_LOGO_HEIGHT) / 2 - 30;
+  QuartzChrome::drawLogo(renderer, logoTop);
+  renderer.drawCenteredText(SMALL_FONT_ID, logoTop + QUARTZ_LOGO_HEIGHT + 24, tr(STR_SLEEPING));
 
   // Make sleep screen dark unless light is selected in settings
   if (SETTINGS.sleepScreen != CrossPointSettings::SLEEP_SCREEN_MODE::LIGHT) {
@@ -959,6 +981,22 @@ bool SleepActivity::renderTransparentOverlayPng(const std::string& path) const {
   config.sourceCropY = placement.cropY;
   config.useExactDimensions = placement.cropX > 0.0f || placement.cropY > 0.0f;
   config.preserveAlpha = true;
+  // QuartzInk: an overlay made for a full screen (within 20% each way) is
+  // stretched to fill this one, so a 480x800 frame also covers the X3's
+  // 528x792 panel instead of leaving bare strips at the sides.
+  const int pageWidth = renderer.getScreenWidth();
+  const int pageHeight = renderer.getScreenHeight();
+  const bool nearFullScreen = dimensions.width * 5 >= pageWidth * 4 && dimensions.width * 4 <= pageWidth * 5 &&
+                              dimensions.height * 5 >= pageHeight * 4 && dimensions.height * 4 <= pageHeight * 5;
+  if (nearFullScreen) {
+    config.x = 0;
+    config.y = 0;
+    config.maxWidth = pageWidth;
+    config.maxHeight = pageHeight;
+    config.sourceCropX = 0.0f;
+    config.sourceCropY = 0.0f;
+    config.useExactDimensions = true;
+  }
 
   PngToFramebufferConverter converter;
   LOG_DBG("SLP", "Rendering transparent PNG overlay: %s (%dx%d)", path.c_str(), dimensions.width, dimensions.height);
@@ -1008,6 +1046,8 @@ bool SleepActivity::renderSleepOverlayPath(const std::string& path) const {
 }
 
 void SleepActivity::renderTransparentCustomSleepScreen() const {
+  std::string pinned;
+  if (pinnedSleepImage(true, pinned) && renderSleepOverlayPath(pinned)) return;
   if (renderSleepOverlayPath(TRANSPARENT_SLEEP_ROOT_BMP)) return;
   if (renderSleepOverlayPath(TRANSPARENT_SLEEP_ROOT_PNG)) return;
 

@@ -3,6 +3,7 @@
 #include <FreeInkUI.h>
 
 #include "GfxRenderer.h"
+#include "QuartzLogoDraw.h"
 #include "themes/BaseTheme.h"
 
 // Shared pieces of QuartzInk's look, so list screens match Home and the
