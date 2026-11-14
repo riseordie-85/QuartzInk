@@ -10,10 +10,12 @@
 #include <esp_mac.h>
 #endif
 
+#include <algorithm>
 #include <array>
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "RecentBooksStore.h"
 #include "stats/BookReadingStats.h"
@@ -217,10 +219,13 @@ bool writeBook(Out& out, const std::string& path, const std::string& title, cons
 void writeBooks(Out& out) {
   out.put(",\"books\":[");
   bool first = true;
+  // Books already written, so the recent list below adds only what the index
+  // missed. Only books with stats land here: a handful, not the whole card.
+  std::vector<std::string> written;
 
   // The Library index lists every book on the card with its metadata. It only
-  // exists once Library has been opened; until then fall back to the recent
-  // books list, which covers everything opened recently.
+  // exists once Library has been opened, and books added since its last scan
+  // are missing until Library rescans; the recent books list covers both.
   library::LibraryIndexFile index;
   if (index.open(library::libraryIndexPath())) {
     std::string path;
@@ -236,15 +241,19 @@ void writeBooks(Out& out) {
       index.readTitle(record, title);
       index.readAuthor(record, author);
       if (title.empty()) index.readName(record, title);
-      if (writeBook(out, path, title, author, series, first)) first = false;
+      if (writeBook(out, path, title, author, series, first)) {
+        first = false;
+        written.push_back(path);
+      }
     }
     index.close();
   } else {
     LOG_INF("STX", "No Library index; exporting stats for recent books only");
-    for (const auto& recent : RECENT_BOOKS.getBooks()) {
-      if (!out.ok) break;
-      if (writeBook(out, recent.path, recent.title, recent.author, std::string{}, first)) first = false;
-    }
+  }
+  for (const auto& recent : RECENT_BOOKS.getBooks()) {
+    if (!out.ok) break;
+    if (std::find(written.begin(), written.end(), recent.path) != written.end()) continue;
+    if (writeBook(out, recent.path, recent.title, recent.author, std::string{}, first)) first = false;
   }
   out.put("]");
 }

@@ -64,9 +64,10 @@ Add `?download=1` to have browsers save it as `quartzink-stats.json`.
   this firmware: days before that appear in `readingDays` only. Importers that
   don't know the field can ignore it; the format stays version 1.
 - `dayOfWeekSeconds` starts on Monday.
-- `books` lists every EPUB, TXT, Markdown and XTC book with any stats. With a
-  Library index (open Library once), all books on the card are covered, with
-  title and author from the Library; otherwise only books in the recent list
-  are. `series` is always `null` on this firmware.
+- `books` lists every EPUB, TXT, Markdown and XTC book with any stats: every
+  book in the Library index (once Library has been opened), with title and
+  author from the Library, plus any book in the recent list that the index
+  doesn't have yet (one added since Library last scanned). `series` is always
+  `null` on this firmware.
 - Missing values are `null`: dates the reader never recorded, a time-left
   estimate it has not made yet, and `series`.
