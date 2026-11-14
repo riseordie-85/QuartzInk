@@ -1,9 +1,11 @@
 name: QuartzInk firmware
 
 # Builds flashable firmware for Tim's readers on every push to a QuartzInk
-# branch, and attaches the .bin files to the run (Actions tab) for the web
-# flasher. CrossPoint's own CI only builds develop and pull requests. The build
-# steps mirror ci.yml's build job.
+# branch, and attaches the .bin files to the run (Actions tab). Pushes to main
+# also replace the "latest-build" release, whose assets keep fixed names
+# (quartzink-x3-x4.bin, quartzink-x4-pro.bin, quartzink-picco.bin) for the
+# flasher at quartz.timcordova.com/flash/. CrossPoint's own CI only builds
+# develop and pull requests. The build steps mirror ci.yml's build job.
 on:
   push:
     branches: [main, crosspoint-base, "feat/**", "fix/**"]
@@ -104,4 +106,41 @@ jobs:
           name: quartzink-${{ matrix.device }}-${{ github.sha }}
           path: .pio/build/${{ matrix.env }}/firmware.bin
           if-no-files-found: error
+
+  release:
+    name: Publish latest-build release
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: quartzink-latest-build
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: quartzink-*-${{ github.sha }}
+          path: artifacts
+
+      - name: Replace the latest-build release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          for device in x3-x4 x4-pro picco; do
+            cp "artifacts/quartzink-${device}-${GITHUB_SHA}/firmware.bin" "release/quartzink-${device}.bin"
+          done
+          short="${GITHUB_SHA::7}"
+          subject="$(gh api "repos/${GH_REPO}/commits/${GITHUB_SHA}" --jq '.commit.message' | head -1)"
+          gh release delete latest-build --cleanup-tag --yes || true
+          gh release create latest-build release/*.bin \
+            --target "${GITHUB_SHA}" \
+            --prerelease \
+            --title "Latest build (${short})" \
+            --notes "Built from ${short}: ${subject}
+
+          Flash it from https://quartz.timcordova.com/flash/ (X3, X4, X4 Pro and Boox Picco)."
 
