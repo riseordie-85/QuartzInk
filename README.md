@@ -5,24 +5,15 @@ the open-source e-reader firmware. It keeps CrossPoint's reader underneath and g
 Quartz apps (Quartz Reader, Quartz Notes and friends): a Quartz Home screen with shelves, Quartz-style page
 settings, reading stats that can leave the device, and a Quartz web dashboard.
 
-<table>
-  <tr>
-    <td align="center" width="50%">
-      <img src="./docs/images/quartzink/home-shelves.jpg" alt="Quartz Home with the current book, recent covers and shelf buttons" />
-    </td>
-    <td align="center" width="50%">
-      <img src="./docs/images/quartzink/page-settings.jpg" alt="Quartz page settings: size, font, spacing, margins and alignment" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center" width="50%">
-      <img src="./docs/images/quartzink/book-bar.jpg" alt="The book bar with Home, Look up, Contents, Bookmark and Page settings, and the timeline" />
-    </td>
-    <td align="center" width="50%">
-      <img src="./docs/images/quartzink/sleep-settings.jpg" alt="Sleep screen choices including Cover + Overlay" />
-    </td>
-  </tr>
-</table>
+<p align="center">
+  <img src="./docs/images/quartzink/1-home-screen.jpg" alt="Shelf-based home screen: the current book with progress, recent covers and genre shelves" width="100%" />
+  <img src="./docs/images/quartzink/2-reader-menu.jpg" alt="Reader menu with home, search, contents, bookmarks, page settings and a page slider" width="100%" />
+  <img src="./docs/images/quartzink/3-page-settings.jpg" alt="Page settings: size, font, spacing, margins and alignment" width="100%" />
+  <img src="./docs/images/quartzink/4-settings.jpg" alt="Settings grouped into System, Display, Wallpapers, Reader, Controls, Library and Connectivity" width="100%" />
+  <img src="./docs/images/quartzink/5-wallpapers.jpg" alt="Wallpapers and overlays for the sleep screen, with pinning and shuffle" width="100%" />
+  <img src="./docs/images/quartzink/6-reading-stats.jpg" alt="Reading stats: today, this week, this year, streak, reading days and totals" width="100%" />
+  <img src="./docs/images/quartzink/7-reading-habits.jpg" alt="Reading habits: books finished by month, time of day and recently finished books" width="100%" />
+</p>
 
 ### Supported devices
 
