@@ -75,6 +75,9 @@ void MappedInputManager::update(const bool deferHomeButtonAction) const {
         case CrossPointSettings::PWR_FRONTLIGHT:
           homeAction = HomeButtonAction::ToggleFrontlight;
           break;
+        case CrossPointSettings::PWR_SCREENSHOT:
+          homeAction = HomeButtonAction::Screenshot;
+          break;
       }
     }
   } else {

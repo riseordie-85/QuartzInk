@@ -994,6 +994,11 @@ void loop() {
   if (mappedInputManager.homeButtonAction() == HomeButtonAction::ToggleFrontlight) {
     toggleFrontlight();
   }
+  // Power button or home key set to Take screenshot: same capture as Power + Down.
+  if (mappedInputManager.homeButtonAction() == HomeButtonAction::Screenshot) {
+    RenderLock lock;
+    ScreenshotUtil::takeScreenshot(renderer);
+  }
   if (mappedInputManager.homeButtonAction() == HomeButtonAction::Refresh ||
       (SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::FORCE_REFRESH &&
        mappedInputManager.wasReleased(MappedInputManager::Button::Power))) {

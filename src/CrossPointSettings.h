@@ -178,6 +178,7 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     PWR_SYNC = 8,
     PWR_READER_MENU = 9,
     PWR_FRONTLIGHT = 10,
+    PWR_SCREENSHOT = 11,
     SHORT_PWRBTN_COUNT
   };
 
