@@ -11,7 +11,9 @@ power_actions = "enum SHORT_PWRBTN {" + settings_header.split(
     "enum SHORT_PWRBTN {", 1
 )[1].split("};", 1)[0] + "};"
 # Exercise production frame/dispatch methods with physical input under test control.
-methods = []
+# Power shortcuts and the side-hold threshold: the anonymous namespace holding powerShortcut().
+helpers_start = source.rindex("namespace {", 0, source.index("HomeButtonAction powerShortcut("))
+methods = [source[helpers_start:source.index("}  // namespace", helpers_start) + len("}  // namespace")]]
 for signature, following in (
     ("void MappedInputManager::update(", "bool MappedInputManager::isNavDirectionSwapped("),
     ("bool MappedInputManager::injectRemoteClick(", "bool MappedInputManager::wasLongPressed("),
@@ -32,7 +34,8 @@ struct HalGPIO {
   bool wasAnyReleased() const { return released; }
   bool wasPressed(uint8_t b) const { return b == button && pressed; }
   bool wasReleased(uint8_t b) const { return b == button && released; }
-  bool isPressed(uint8_t b) const { return b == button && held; }
+  bool powerDown = false;  // Power held alongside `button`
+  bool isPressed(uint8_t b) const { return (b == button && held) || (b == BTN_POWER && powerDown); }
   unsigned long getHeldTime() const { return 900; }
   unsigned long getPowerButtonHeldTime() const { return powerHeldMs; }
   bool wasCapacitivePagePressed() const { return false; }
@@ -59,6 +62,7 @@ struct CrossPointSettings {
   int shortPwrBtn = IGNORE, doublePwrBtn = PWR_FRONTLIGHT;
   int vibration = VIBRATION_OFF, hapticIntensity = 0;
   int homeButtonTapAction = 0, homeButtonDoubleTapAction = 0, homeButtonLongPressAction = 0;
+  int sideUpHoldAction = 1, sideDownHoldAction = 1;  // HomeButtonAction::Ignore
 } SETTINGS;
 struct HalHaptics {
   static void feedback(bool, bool, int) {}
@@ -243,7 +247,76 @@ void checkPowerClicks() {
   assert(input.powerSleepClick());
 }
 
+// Power shortcuts without click classification, and side-button holds.
+void checkShortcuts() {
+  BoardConfig::x4Pro = false;
+  HalGPIO gpio;
+  GfxRenderer renderer;
+  MappedInputManager input(gpio, renderer);
+  auto frame = [&](uint8_t button, bool held, bool released) {
+    gpio.button = button; gpio.pressed = false; gpio.held = held; gpio.released = released;
+    input.update();
+  };
+  for (const auto [setting, action] : {std::pair{CrossPointSettings::PWR_SCREENSHOT, HomeButtonAction::Screenshot},
+                                       std::pair{CrossPointSettings::PWR_LIBRARY, HomeButtonAction::Library},
+                                       std::pair{CrossPointSettings::PWR_FILE_TRANSFER, HomeButtonAction::FileTransfer},
+                                       std::pair{CrossPointSettings::PWR_HOME, HomeButtonAction::Home},
+                                       std::pair{CrossPointSettings::PWR_SYNC, HomeButtonAction::Sync}}) {
+    SETTINGS.shortPwrBtn = setting;
+    frame(HalGPIO::BTN_POWER, false, true);
+    assert(input.homeButtonAction() == action);
+    frame(HalGPIO::BTN_POWER, false, false);
+    assert(input.homeButtonAction() == HomeButtonAction::Ignore);
+  }
+  SETTINGS.shortPwrBtn = CrossPointSettings::IGNORE;
+  auto at = [&](unsigned long time, uint8_t button, bool pressed, bool held, bool released) {
+    clockMs = time;
+    gpio.button = button; gpio.pressed = pressed; gpio.held = held; gpio.released = released;
+    input.update();
+  };
+  // A side button held from before wake (no press edge) is ignored.
+  SETTINGS.sideDownHoldAction = static_cast<int>(HomeButtonAction::Library);
+  at(10000, HalGPIO::BTN_DOWN, false, true, false);
+  at(11000, HalGPIO::BTN_DOWN, false, true, false);
+  assert(input.homeButtonAction() == HomeButtonAction::Ignore);
+  at(11010, HalGPIO::BTN_DOWN, false, false, true);
+  at(11020, HalGPIO::BTN_DOWN, false, false, false);
+  // A hold runs its action once, after 600 ms of its own press.
+  at(12000, HalGPIO::BTN_DOWN, true, true, false);
+  at(12590, HalGPIO::BTN_DOWN, false, true, false);
+  assert(input.homeButtonAction() == HomeButtonAction::Ignore);
+  at(12600, HalGPIO::BTN_DOWN, false, true, false);
+  assert(input.homeButtonAction() == HomeButtonAction::Library);
+  at(12700, HalGPIO::BTN_DOWN, false, true, false);
+  assert(input.homeButtonAction() == HomeButtonAction::Ignore);
+  at(12710, HalGPIO::BTN_DOWN, false, false, true);
+  assert(input.homeButtonAction() == HomeButtonAction::Ignore);
+  at(12720, HalGPIO::BTN_DOWN, false, false, false);
+  // Power + Down (screenshot combo): letting go of Power first runs no hold.
+  at(13000, HalGPIO::BTN_DOWN, true, true, false);
+  gpio.powerDown = true;
+  at(13100, HalGPIO::BTN_DOWN, false, true, false);
+  gpio.powerDown = false;
+  at(13800, HalGPIO::BTN_DOWN, false, true, false);
+  assert(input.homeButtonAction() == HomeButtonAction::Ignore);
+  at(13810, HalGPIO::BTN_DOWN, false, false, true);
+  at(13820, HalGPIO::BTN_DOWN, false, false, false);
+  // The other side button has no hold assigned.
+  at(14000, HalGPIO::BTN_UP, true, true, false);
+  at(14700, HalGPIO::BTN_UP, false, true, false);
+  assert(input.homeButtonAction() == HomeButtonAction::Ignore);
+  at(14710, HalGPIO::BTN_UP, false, false, false);
+  // Sleep takes the power button's sleep path.
+  SETTINGS.sideDownHoldAction = static_cast<int>(HomeButtonAction::Sleep);
+  at(15000, HalGPIO::BTN_DOWN, true, true, false);
+  at(15600, HalGPIO::BTN_DOWN, false, true, false);
+  assert(input.powerSleepClick() && input.homeButtonAction() == HomeButtonAction::Ignore);
+  at(15610, HalGPIO::BTN_DOWN, false, false, false);
+  SETTINGS.sideDownHoldAction = static_cast<int>(HomeButtonAction::Ignore);
+}
+
 int main() {
+  checkShortcuts();
   for (const bool x4Pro : {false, true}) {
     BoardConfig::x4Pro = x4Pro;
     checkRemoteButtons();
@@ -257,7 +330,7 @@ with tempfile.TemporaryDirectory() as directory:
     (directory / "HalGPIO.h").write_text(stub)
     cpp = directory / "remote_input.cpp"
     executable = directory / "remote_input"
-    cpp.write_text("#include <initializer_list>\n" + harness)
+    cpp.write_text("#include <initializer_list>\n#include <utility>\n" + harness)
     subprocess.run([
         "c++", "-std=c++20", "-DFREEINK_CAP_TOUCH=0", "-I", str(directory),
         "-I", str(ROOT / "src"), str(cpp), "-o", str(executable),

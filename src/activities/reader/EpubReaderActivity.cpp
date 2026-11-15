@@ -967,6 +967,11 @@ void EpubReaderActivity::loop() {
     }
   }
 
+  if (syncOnOpen && bookRemembered && !endOfBookMenuOpen) {
+    syncOnOpen = false;
+    if (launchKOReaderSync()) return;
+  }
+
   if (!endOfBookMenuOpen) {
     switch (mappedInput.homeButtonAction()) {
       case HomeButtonAction::Bookmark:

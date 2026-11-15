@@ -96,7 +96,8 @@ bool belongsToControlsGroup(const SettingInfo& setting, ControlsGroup group) {
              field == &CrossPointSettings::backShortToFileBrowser;
     case ControlsGroup::Side:
       return shared || field == &CrossPointSettings::sideButtonLayout ||
-             field == &CrossPointSettings::sideButtonFollowOrientation;
+             field == &CrossPointSettings::sideButtonFollowOrientation ||
+             field == &CrossPointSettings::sideUpHoldAction || field == &CrossPointSettings::sideDownHoldAction;
     case ControlsGroup::Touch:
       return field == &CrossPointSettings::touchReaderControls || field == &CrossPointSettings::pageTurnGesture ||
              field == &CrossPointSettings::previousPageGesture || field == &CrossPointSettings::showReaderMenu;

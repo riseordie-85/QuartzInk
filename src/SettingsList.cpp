@@ -380,6 +380,10 @@ void forEachBaseSetting(SettingVisitor visit, void* context) {
                                    home_button::KEYS[i], StrId::STR_CAT_CONTROLS));
     }
   }
+  emit(SettingInfo::StaticEnum(StrId::STR_QZ_SIDE_UP_HOLD, &CrossPointSettings::sideUpHoldAction,
+                               home_button::ACTION_LABELS, "sideUpHoldAction", StrId::STR_CAT_CONTROLS));
+  emit(SettingInfo::StaticEnum(StrId::STR_QZ_SIDE_DOWN_HOLD, &CrossPointSettings::sideDownHoldAction,
+                               home_button::ACTION_LABELS, "sideDownHoldAction", StrId::STR_CAT_CONTROLS));
 }
 
 size_t countBaseSettings() {

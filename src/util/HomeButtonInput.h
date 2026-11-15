@@ -17,7 +17,12 @@ enum class HomeButtonAction : uint8_t {
   ToggleFrontlight,
   CreateClipping,
   FileBrowser,
+  // QuartzInk-owned values from here on. If upstream appends its own, renumber
+  // one side and remap old saves on load (see CrossPointSettings.cpp LEGACY).
   Screenshot,
+  Library,
+  FileTransfer,
+  Sleep,
   Count
 };
 

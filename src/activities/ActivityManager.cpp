@@ -13,6 +13,7 @@
 
 #include "Activity.h"
 #include "CrossPointSettings.h"
+#include "CrossPointState.h"
 #include "HapticFeedback.h"
 #include "OpdsServerStore.h"
 #include "activities/stats/ReadingStatsActivity.h"
@@ -27,6 +28,7 @@
 #include "network/CrossPointWebServerActivity.h"
 #include "network/UsbDriveActivity.h"
 #include "plugins/PluginCatalogActivity.h"
+#include "reader/EpubReaderActivity.h"
 #include "reader/ReaderActivity.h"
 #include "reader/RemoteTurnGate.h"
 #include "settings/OpdsServerListActivity.h"
@@ -125,6 +127,7 @@ void ActivityManager::loop() {
       goHome();
       return;
     }
+    if (handleShortcut(mappedInput.homeButtonAction())) return;
 
     // Tap-first control-center entry: a tap on the status-bar band of the
     // top-level tab screens opens it, mirroring the top-edge swipe (which some
@@ -416,6 +419,44 @@ bool ActivityManager::preventAutoSleep() const { return currentActivity && curre
 
 bool ActivityManager::requiresExclusiveStorageLoop() const {
   return currentActivity && currentActivity->requiresExclusiveStorageLoop();
+}
+
+bool ActivityManager::handleShortcut(const HomeButtonAction action) {
+  const std::string& name = currentActivity->name;
+  switch (action) {
+    case HomeButtonAction::Library:
+      if (name == "Library") return false;
+      goToLibrary();
+      return true;
+    case HomeButtonAction::FileBrowser:
+      if (name == "FileBrowser" || currentActivity->isReaderActivity()) return false;
+      goToFileBrowser();
+      return true;
+    case HomeButtonAction::FileTransfer:
+      if (name == "CrossPointWebServer") return false;
+      goToFileTransfer();
+      return true;
+    case HomeButtonAction::Sync: {
+      // An open book (or a screen over it) syncs itself; elsewhere, open the
+      // last book and sync it once its page is up.
+      if (isReaderActivity() || name == "KOReaderSync") return false;
+      const std::string& path = APP_STATE.openEpubPath;
+      if (!FsHelpers::hasEpubExtension(path)) {
+        LOG_DBG("ACT", "Sync shortcut: no EPUB to sync");
+        return false;
+      }
+      auto reader = makeUniqueNoThrow<EpubReaderActivity>(renderer, mappedInput, path, false);
+      if (!reader) {
+        LOG_ERR("ACT", "OOM: reader for Sync shortcut");
+        return false;
+      }
+      reader->syncWhenOpened();
+      replaceActivity(std::move(reader));
+      return true;
+    }
+    default:
+      return false;
+  }
 }
 
 bool ActivityManager::isReaderActivity() const {

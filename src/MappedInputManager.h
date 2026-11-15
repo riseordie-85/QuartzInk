@@ -143,6 +143,8 @@ class MappedInputManager {
   bool areSidePageButtonsSwapped() const;
   Labels mapFrontLabels(const char* back, const char* confirm, const char* left, const char* right) const;
   bool mapButton(Button button, bool (HalGPIO::*fn)(uint8_t) const) const;
+  // Reads a physical button; side buttons with an assigned hold report their press on release.
+  bool readRaw(uint8_t raw, bool (HalGPIO::*fn)(uint8_t) const) const;
   // SDK edge classification (fui::edgeSwipe) + the shared decode/held-time
   // bookkeeping; the wrappers below give each edge its board meaning.
   bool wasEdgeSwipe(freeink::ui::ScreenEdge edge) const;
@@ -169,4 +171,6 @@ class MappedInputManager {
   mutable unsigned long touchHeldOverrideAt = 0;
   mutable uint16_t longPressFiredButtons = 0;
   mutable uint16_t suppressedReleaseButtons = 0;
+  mutable uint8_t sideHoldFired = 0;           // side buttons (raw bits) whose hold action already ran
+  mutable uint32_t sideHoldStart[2] = {0, 0};  // when Up/Down went down; 0 = no press seen since boot
 };

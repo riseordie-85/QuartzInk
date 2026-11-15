@@ -319,6 +319,8 @@ Side buttons, and Taps and gestures where supported by the device. See the
 - **Orient Front Buttons**: Make front-button directions follow the reading orientation. Available on devices without touch.
 - **Orient Side Buttons**: Available on all supported devices with side page buttons, including touch and button-only devices. Reverse the reader's selected **Layout (reader only)** in both landscape modes when enabled. Normal portrait always keeps the selected layout, and upside-down portrait always reverses it, whether this option is on or off. Layouts that give both buttons the same action, or disable them, are unchanged. This option is off by default, including when upgrading from a version without it. Existing saved choices are preserved.
 
+- **Hold Upper Side Button** / **Hold Lower Side Button** (in **Side buttons**): Choose an action for holding that side button for about 0.6 seconds, on any screen. It offers the same actions as the home button gestures, plus Library, File Transfer and Sleep. "Ignore" (default) keeps the button as it is. With an action assigned, a short press of that button still turns the page or moves the selection, but only when you let go of it, and holding it runs only the action: that button no longer repeats while held and its **Page turn long press** no longer applies. Holding the lower button together with Power still takes a screenshot.
+
 - **Page turn long press**: Set the action for a long press of a page-turn button.
   Open **Settings → Controls → Front buttons** or **Settings → Controls → Side buttons** on supported devices.
   Both entries change the same setting:
@@ -341,6 +343,9 @@ Side buttons, and Taps and gestures where supported by the device. See the
   - "Page Turn" - A short press in reading mode turns to the next page; a long press turns the device off
   - "Links and Footnotes" - A short press in reading mode opens link selection. If the page has only one link, it opens directly. After following a link, a short press returns to the previous location.
   - "Refresh" - A short press triggers a manual full-screen refresh, useful for clearing ghosting
+  - "Take screenshot" - A short press saves a screenshot, like Power + Down
+  - "CrossPoint Sync" - A short press syncs the book you're reading. On any other screen it opens the last EPUB you read and syncs it.
+  - "Home", "Library", "Browse Files" and "File Transfer" - A short press opens that screen from anywhere
 - **Quick return from links**: Controls whether a short press of the power button acts as Back after following a link or footnote.
 
 #### 3.6.4 System

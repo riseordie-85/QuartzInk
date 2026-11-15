@@ -57,6 +57,7 @@ struct CrossPointSettings {
   enum { PREV_NEXT, NEXT_PREV, SIDE_BUTTONS_DISABLED, NEXT_NEXT, PREV_PREV };
   uint8_t frontButtonBack = 0, frontButtonConfirm = 1, frontButtonLeft = 2, frontButtonRight = 3;
   uint8_t frontButtonFollowOrientation = 0, sideButtonFollowOrientation = 0, sideButtonLayout = PREV_NEXT;
+  uint8_t sideUpHoldAction = 1, sideDownHoldAction = 1;  // HomeButtonAction::Ignore
 } SETTINGS;
 struct SavedValue {
   bool missing;
@@ -129,6 +130,19 @@ int main() {
   MappedInputManager input(gpio, renderer);
   using Button = MappedInputManager::Button;
   int checks = 0;
+  // A side button with a hold action never reads as held, and its press counts
+  // on release unless the hold already ran (stub: one edge reads as all three).
+  SETTINGS.sideDownHoldAction = static_cast<uint8_t>(HomeButtonAction::Library);
+  gpio.pressed = HalGPIO::BTN_DOWN;
+  assert(!input.mapButton(Button::Down, &HalGPIO::isPressed));
+  assert(input.mapButton(Button::Down, &HalGPIO::wasPressed) && input.mapButton(Button::Down, &HalGPIO::wasReleased));
+  input.sideHoldFired = 1u << HalGPIO::BTN_DOWN;
+  assert(!input.mapButton(Button::Down, &HalGPIO::wasPressed) && !input.mapButton(Button::Down, &HalGPIO::wasReleased));
+  assert(input.mapButton(Button::Up, &HalGPIO::isPressed) == false);
+  input.sideHoldFired = 0;
+  SETTINGS.sideDownHoldAction = static_cast<uint8_t>(HomeButtonAction::Ignore);
+  assert(input.mapButton(Button::Down, &HalGPIO::isPressed));
+  gpio.pressed = -1;
   // Columns: portrait, landscape CW, upside-down portrait, landscape CCW.
   constexpr bool expectedSideSwaps[2][4] = {
       {false, false, true, false},

@@ -53,6 +53,10 @@ class ActivityManager {
   std::unique_ptr<Activity> currentActivity;
 
   void exitActivity(const RenderLock& lock);
+  // QuartzInk: Library, File Transfer and Sync shortcuts from any button, and
+  // Browse Files outside the readers (which open the book's folder themselves).
+  // Returns true when it navigated.
+  bool handleShortcut(HomeButtonAction action);
 
   // Pending activity to be launched on next loop iteration
   std::unique_ptr<Activity> pendingActivity;

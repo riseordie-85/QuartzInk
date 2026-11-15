@@ -219,6 +219,7 @@ class EpubReaderActivity final : public ReaderActivity {
   void openClippings();
   void applyProgressChange(const ProgressChangeResult& progress);
   bool launchKOReaderSync();
+  bool syncOnOpen = false;
   unsigned long confirmLongPressThreshold() const;
   void toggleAutoPageTurn(uint8_t selectedPageTurnOption);
   void loadCachedBookmarks();
@@ -268,6 +269,10 @@ class EpubReaderActivity final : public ReaderActivity {
                               bool allowFastInitialRefresh)
       : ReaderActivity("EpubReader", renderer, mappedInput, std::move(bookPath), allowFastInitialRefresh) {}
   ~EpubReaderActivity() override;
+
+  // Set by the Sync shortcut when it opens the book from another screen: sync
+  // once the first page is drawn and the book is saved as the last one opened.
+  void syncWhenOpened() { syncOnOpen = true; }
 
   void loop() override;
   void render(RenderLock&& lock) override;

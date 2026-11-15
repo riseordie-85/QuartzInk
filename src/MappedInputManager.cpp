@@ -14,6 +14,37 @@
 
 namespace fui = freeink::ui;
 
+namespace {
+// Holding a side button this long runs its assigned action (sideUp/DownHoldAction).
+constexpr unsigned long SIDE_HOLD_MS = 600;
+
+// Power-button settings that run the same action as a home-key shortcut.
+HomeButtonAction powerShortcut(const uint8_t setting) {
+  switch (setting) {
+    case CrossPointSettings::PWR_BOOKMARK:
+      return HomeButtonAction::Bookmark;
+    case CrossPointSettings::PWR_SYNC:
+      return HomeButtonAction::Sync;
+    case CrossPointSettings::PWR_READER_MENU:
+      return HomeButtonAction::ReaderMenu;
+    case CrossPointSettings::PWR_FRONTLIGHT:
+      return HomeButtonAction::ToggleFrontlight;
+    case CrossPointSettings::PWR_SCREENSHOT:
+      return HomeButtonAction::Screenshot;
+    case CrossPointSettings::PWR_HOME:
+      return HomeButtonAction::Home;
+    case CrossPointSettings::PWR_LIBRARY:
+      return HomeButtonAction::Library;
+    case CrossPointSettings::PWR_FILES:
+      return HomeButtonAction::FileBrowser;
+    case CrossPointSettings::PWR_FILE_TRANSFER:
+      return HomeButtonAction::FileTransfer;
+    default:
+      return HomeButtonAction::Ignore;
+  }
+}
+}  // namespace
+
 void MappedInputManager::update(const bool deferHomeButtonAction) const {
   remoteInput.reset();
   gpio.update();
@@ -63,42 +94,45 @@ void MappedInputManager::update(const bool deferHomeButtonAction) const {
         case CrossPointSettings::CREATE_CLIPPING:
           homeAction = HomeButtonAction::CreateClipping;
           break;
-        case CrossPointSettings::PWR_BOOKMARK:
-          homeAction = HomeButtonAction::Bookmark;
-          break;
-        case CrossPointSettings::PWR_SYNC:
-          homeAction = HomeButtonAction::Sync;
-          break;
-        case CrossPointSettings::PWR_READER_MENU:
-          homeAction = HomeButtonAction::ReaderMenu;
-          break;
-        case CrossPointSettings::PWR_FRONTLIGHT:
-          homeAction = HomeButtonAction::ToggleFrontlight;
-          break;
-        case CrossPointSettings::PWR_SCREENSHOT:
-          homeAction = HomeButtonAction::Screenshot;
+        default:
+          homeAction = powerShortcut(action);
           break;
       }
     }
   } else {
     powerButtonInput.reset();
   }
-  // Touch boards without a home key: a short power click can carry a reader
-  // shortcut (see SHORT_PWRBTN).
+  // Without click classification, a short power press carries the same
+  // shortcuts (see SHORT_PWRBTN); the other settings read the release directly.
   if (!classifyPower && homeAction == HomeButtonAction::Ignore && mapButton(Button::Power, &HalGPIO::wasReleased)) {
-    switch (SETTINGS.shortPwrBtn) {
-      case CrossPointSettings::PWR_BOOKMARK:
-        homeAction = HomeButtonAction::Bookmark;
-        break;
-      case CrossPointSettings::PWR_SYNC:
-        homeAction = HomeButtonAction::Sync;
-        break;
-      case CrossPointSettings::PWR_READER_MENU:
-        homeAction = HomeButtonAction::ReaderMenu;
-        break;
-      default:
-        break;
+    homeAction = powerShortcut(SETTINGS.shortPwrBtn);
+  }
+  // Side-button holds. A side button with an assigned hold reports its press on
+  // release instead (readRaw), so a short press still turns the page or moves
+  // the selection and a hold runs only the action.
+  for (const uint8_t raw : {HalGPIO::BTN_UP, HalGPIO::BTN_DOWN}) {
+    const uint8_t bit = 1u << raw;
+    const uint8_t side = raw == HalGPIO::BTN_UP ? 0 : 1;
+    if (!gpio.isPressed(raw) && !gpio.wasReleased(raw)) sideHoldFired &= ~bit;
+    if (gpio.wasPressed(raw)) sideHoldStart[side] = millis();
+    const auto action =
+        static_cast<HomeButtonAction>(side == 0 ? SETTINGS.sideUpHoldAction : SETTINGS.sideDownHoldAction);
+    if (action == HomeButtonAction::Ignore || (sideHoldFired & bit) || !gpio.isPressed(raw)) continue;
+    // A press that began before wake, or that joins Power (the Power + Down
+    // screenshot combo), is swallowed whole: no hold and no short press.
+    if (gpio.isPressed(HalGPIO::BTN_POWER) || sideHoldStart[side] == 0) {
+      sideHoldFired |= bit;
+      continue;
     }
+    if (millis() - sideHoldStart[side] < SIDE_HOLD_MS) continue;
+    sideHoldFired |= bit;
+    if (homeAction == HomeButtonAction::Ignore) homeAction = action;
+    HalHaptics::longPress(SETTINGS.vibration != CrossPointSettings::VIBRATION_OFF, SETTINGS.hapticIntensity);
+  }
+  // Sleep from the home key or a side button takes the power button's sleep path.
+  if (homeAction == HomeButtonAction::Sleep) {
+    powerSleepFrame = true;
+    homeAction = HomeButtonAction::Ignore;
   }
   if (deferHomeButtonAction) {
     deferredPowerSleepFrame = deferredPowerSleepFrame || powerSleepFrame;
@@ -190,10 +224,10 @@ bool MappedInputManager::mapButton(const Button button, bool (HalGPIO::*fn)(uint
       return (gpio.*fn)(SETTINGS.frontButtonRight);
     case Button::Up:
       // Side buttons remain fixed for Up/Down.
-      return (gpio.*fn)(HalGPIO::BTN_UP);
+      return readRaw(HalGPIO::BTN_UP, fn);
     case Button::Down:
       // Side buttons remain fixed for Up/Down.
-      return (gpio.*fn)(HalGPIO::BTN_DOWN);
+      return readRaw(HalGPIO::BTN_DOWN, fn);
     case Button::Power:
       // Power button bypasses remapping.
       return (gpio.*fn)(HalGPIO::BTN_POWER);
@@ -201,11 +235,11 @@ bool MappedInputManager::mapButton(const Button button, bool (HalGPIO::*fn)(uint
       // Reader page navigation uses side buttons and can be swapped via settings.
       switch (sideLayout) {
         case CrossPointSettings::PREV_NEXT:
-          return (gpio.*fn)(areSidePageButtonsSwapped() ? HalGPIO::BTN_DOWN : HalGPIO::BTN_UP);
+          return readRaw(areSidePageButtonsSwapped() ? HalGPIO::BTN_DOWN : HalGPIO::BTN_UP, fn);
         case CrossPointSettings::NEXT_PREV:
-          return (gpio.*fn)(areSidePageButtonsSwapped() ? HalGPIO::BTN_UP : HalGPIO::BTN_DOWN);
+          return readRaw(areSidePageButtonsSwapped() ? HalGPIO::BTN_UP : HalGPIO::BTN_DOWN, fn);
         case CrossPointSettings::PREV_PREV:
-          return (gpio.*fn)(HalGPIO::BTN_UP) || (gpio.*fn)(HalGPIO::BTN_DOWN);
+          return readRaw(HalGPIO::BTN_UP, fn) || readRaw(HalGPIO::BTN_DOWN, fn);
         case CrossPointSettings::NEXT_NEXT:
         case CrossPointSettings::SIDE_BUTTONS_DISABLED:
         default:
@@ -215,11 +249,11 @@ bool MappedInputManager::mapButton(const Button button, bool (HalGPIO::*fn)(uint
       // Reader page navigation uses side buttons and can be swapped via settings.
       switch (sideLayout) {
         case CrossPointSettings::PREV_NEXT:
-          return (gpio.*fn)(areSidePageButtonsSwapped() ? HalGPIO::BTN_UP : HalGPIO::BTN_DOWN);
+          return readRaw(areSidePageButtonsSwapped() ? HalGPIO::BTN_UP : HalGPIO::BTN_DOWN, fn);
         case CrossPointSettings::NEXT_PREV:
-          return (gpio.*fn)(areSidePageButtonsSwapped() ? HalGPIO::BTN_DOWN : HalGPIO::BTN_UP);
+          return readRaw(areSidePageButtonsSwapped() ? HalGPIO::BTN_DOWN : HalGPIO::BTN_UP, fn);
         case CrossPointSettings::NEXT_NEXT:
-          return (gpio.*fn)(HalGPIO::BTN_UP) || (gpio.*fn)(HalGPIO::BTN_DOWN);
+          return readRaw(HalGPIO::BTN_UP, fn) || readRaw(HalGPIO::BTN_DOWN, fn);
         case CrossPointSettings::PREV_PREV:
         case CrossPointSettings::SIDE_BUTTONS_DISABLED:
         default:
@@ -239,6 +273,19 @@ bool MappedInputManager::mapButton(const Button button, bool (HalGPIO::*fn)(uint
   }
 
   return false;
+}
+
+bool MappedInputManager::readRaw(const uint8_t raw, bool (HalGPIO::*fn)(uint8_t) const) const {
+  const bool holdAssigned =
+      (raw == HalGPIO::BTN_UP && SETTINGS.sideUpHoldAction != static_cast<uint8_t>(HomeButtonAction::Ignore)) ||
+      (raw == HalGPIO::BTN_DOWN && SETTINGS.sideDownHoldAction != static_cast<uint8_t>(HomeButtonAction::Ignore));
+  if (!holdAssigned) return (gpio.*fn)(raw);
+  // The press counts on release, unless the hold already ran its action.
+  if (fn == &HalGPIO::isPressed) return false;
+  if (fn == &HalGPIO::wasPressed || fn == &HalGPIO::wasReleased) {
+    return gpio.wasReleased(raw) && (sideHoldFired & (1u << raw)) == 0;
+  }
+  return (gpio.*fn)(raw);
 }
 
 namespace {
@@ -426,7 +473,9 @@ bool MappedInputManager::wasMenuGesture() const { return wasTopEdgeDownSwipe(); 
 bool MappedInputManager::wasReaderMenuSwipeUp() const { return gpio.hasHomeKey() && wasBottomEdgeUpSwipe(); }
 
 bool MappedInputManager::wasHomeGesture() const {
-  return gpio.hasHomeKey() ? homeAction == HomeButtonAction::Home : wasBottomEdgeUpSwipe();
+  // Home from any button (home key, power or side-button shortcut), or the
+  // bottom-edge swipe on touch boards without a home key.
+  return homeAction == HomeButtonAction::Home || (!gpio.hasHomeKey() && wasBottomEdgeUpSwipe());
 }
 
 bool MappedInputManager::wasLightPanelGesture() const { return wasTopEdgeDownSwipe(); }

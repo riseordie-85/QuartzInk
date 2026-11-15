@@ -178,7 +178,12 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
     PWR_SYNC = 8,
     PWR_READER_MENU = 9,
     PWR_FRONTLIGHT = 10,
+    // QuartzInk-owned values from here on; see HomeButtonAction for merges.
     PWR_SCREENSHOT = 11,
+    PWR_HOME = 12,
+    PWR_LIBRARY = 13,
+    PWR_FILES = 14,
+    PWR_FILE_TRANSFER = 15,
     SHORT_PWRBTN_COUNT
   };
 
@@ -318,6 +323,10 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t sideButtonLayout = PREV_NEXT;
   uint8_t frontButtonFollowOrientation = 0;
   uint8_t sideButtonFollowOrientation = 0;
+  // HomeButtonAction run by holding the upper/lower side button (BTN_UP/BTN_DOWN).
+  // Ignore keeps the button's normal press-and-hold behavior.
+  uint8_t sideUpHoldAction = static_cast<uint8_t>(HomeButtonAction::Ignore);
+  uint8_t sideDownHoldAction = static_cast<uint8_t>(HomeButtonAction::Ignore);
   // Front button remap (logical -> hardware)
   // Used by MappedInputManager to translate logical buttons into physical front buttons.
   uint8_t frontButtonBack = FRONT_HW_BACK;

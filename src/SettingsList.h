@@ -220,10 +220,16 @@ inline std::vector<ShortPowerButtonOption> shortPowerButtonOptions() {
   // Touch boards without a home key have no button for these shortcuts.
   if (BoardConfig::hasTouch() && !BoardConfig::hasHomeKey()) {
     options.push_back({StrId::STR_BOOKMARK_OPTION, CrossPointSettings::PWR_BOOKMARK});
-    options.push_back({StrId::STR_KOSYNC, CrossPointSettings::PWR_SYNC});
     options.push_back({StrId::STR_READER_MENU, CrossPointSettings::PWR_READER_MENU});
   }
+  // These work on any screen: Home via wasHomeGesture, Screenshot in main.cpp,
+  // the rest via ActivityManager::handleShortcut.
+  options.push_back({StrId::STR_KOSYNC, CrossPointSettings::PWR_SYNC});
   options.push_back({StrId::STR_SCREENSHOT_BUTTON, CrossPointSettings::PWR_SCREENSHOT});
+  options.push_back({StrId::STR_HOME_SHORTCUT, CrossPointSettings::PWR_HOME});
+  options.push_back({StrId::STR_LIBRARY, CrossPointSettings::PWR_LIBRARY});
+  options.push_back({StrId::STR_BROWSE_FILES, CrossPointSettings::PWR_FILES});
+  options.push_back({StrId::STR_FILE_TRANSFER, CrossPointSettings::PWR_FILE_TRANSFER});
   return options;
 }
 
