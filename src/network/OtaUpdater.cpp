@@ -19,7 +19,12 @@
 #include "FirmwareFlasher.h"
 
 namespace {
-constexpr char latestReleaseUrl[] = "https://api.github.com/repos/crosspoint-reader/crosspoint-reader/releases/latest";
+// QuartzInk updates from its own releases, never from upstream CrossPoint's.
+// releases/latest skips prereleases, so the rolling latest-build is not offered.
+constexpr char latestReleaseUrl[] = "https://api.github.com/repos/riseordie-85/QuartzInk/releases/latest";
+
+// Release tags may be written v1.2.0 or 1.2.0; the version is kept as 1.2.0.
+const char* withoutV(const char* tag) { return tag[0] == 'v' ? tag + 1 : tag; }
 }  // namespace
 
 OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
@@ -38,7 +43,7 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
   }
   ReleaseJsonParser& releaseParser = *releaseParserPtr;
   releaseParser.setFirmwareAssetName("");
-  // Each board updates from crosspoint-<version>-<device>.bin. The combined
+  // Each board updates from quartzink-<version>-<device>.bin. The combined
   // C3 image uses x3-x4; other asset suffixes match their firmware board tag.
   const bool isX4 = board_tag::boardNameLen() == 2 && memcmp(board_tag::boardName(), "x4", 2) == 0;
   char assetSuffix[20] = "-x3-x4";
@@ -54,7 +59,7 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
       releaseParser.feed(reinterpret_cast<const char*>(data + offset), 1);
       offset++;
       if (releaseParser.foundTag()) {
-        snprintf(assetName, sizeof(assetName), "crosspoint-%s%s.bin", releaseParser.getTagName(), assetSuffix);
+        snprintf(assetName, sizeof(assetName), "quartzink-%s%s.bin", withoutV(releaseParser.getTagName()), assetSuffix);
         releaseParser.setFirmwareAssetName(assetName);
         assetNameSet = true;
       }
@@ -80,7 +85,7 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
     return NO_UPDATE;
   }
 
-  latestVersion = releaseParser.getTagName();
+  latestVersion = withoutV(releaseParser.getTagName());
   otaUrl = releaseParser.getFirmwareUrl();
   otaSize = releaseParser.getFirmwareSize();
   totalSize = otaSize;
@@ -96,13 +101,17 @@ bool OtaUpdater::isUpdateNewer() const {
     return false;
   }
 
-  int currentMajor, currentMinor, currentPatch;
-  int latestMajor, latestMinor, latestPatch;
+  int currentMajor = 0, currentMinor = 0, currentPatch = 0;
+  int latestMajor = 0, latestMinor = 0, latestPatch = 0;
 
   const auto currentVersion = CROSSPOINT_VERSION;
 
-  // semantic version check (only match on 3 segments)
-  sscanf(latestVersion.c_str(), "%d.%d.%d", &latestMajor, &latestMinor, &latestPatch);
+  // semantic version check (only match on 3 segments). A tag that isn't a
+  // version at all is never treated as newer.
+  if (sscanf(latestVersion.c_str(), "%d.%d.%d", &latestMajor, &latestMinor, &latestPatch) != 3) {
+    LOG_ERR("OTA", "Release tag is not a version: %s", latestVersion.c_str());
+    return false;
+  }
   sscanf(currentVersion, "%d.%d.%d", &currentMajor, &currentMinor, &currentPatch);
 
   /*

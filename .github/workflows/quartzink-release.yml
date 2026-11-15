@@ -1,0 +1,159 @@
+name: QuartzInk release
+
+# Publishing a release on GitHub (tag v1.2.0 or 1.2.0) builds the firmware for
+# each reader from that tag and attaches it to the release:
+#   quartzink-<version>-x3-x4.bin   Xteink X3 and X4 (one image for both)
+#   quartzink-<version>-x4pro.bin   Xteink X4 Pro
+#   quartzink-<version>-picco.bin   Boox Picco
+# X3/X4 and X4 Pro readers' Check for updates looks for these names on the
+# latest release (src/network/OtaUpdater.cpp); the Picco file is for USB
+# flashing. The tag must match `version` in platformio.ini, so the version a
+# reader reports matches the release it came from.
+#
+# Pre-releases are not built, and readers never see them. Turning a pre-release
+# into a full release builds it then ("released" fires for both a new full
+# release and a promoted pre-release).
+#
+# Run it by hand (Actions > QuartzInk release > Run workflow) to test-build the
+# release firmware for the current version without publishing anything.
+
+on:
+  release:
+    types: [released]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.device }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - env: gh_release
+            device: x3-x4
+          - env: x4pro-gh_release
+            device: x4pro
+          - env: picco-gh_release
+            device: picco
+    env:
+      PIO_ENV: ${{ matrix.env }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+          submodules: recursive
+
+      - name: Read the version
+        run: |
+          configured="$(sed -n 's/^version = //p' platformio.ini | head -n1)"
+          version="${RELEASE_TAG#v}"
+          # A test run has no release; name the files after platformio.ini's version.
+          if [ -z "$RELEASE_TAG" ]; then version="$configured"; fi
+          echo "VERSION=${version}" >> "$GITHUB_ENV"
+
+      - name: Check the tag matches the firmware version
+        if: github.event_name == 'release'
+        run: |
+          configured="$(sed -n 's/^version = //p' platformio.ini | head -n1)"
+          if [ "$VERSION" != "$configured" ]; then
+            echo "::error::The release tag is ${RELEASE_TAG}, but platformio.ini says version = ${configured}. Make them match, then delete this release and its tag (Releases > Tags) and publish again."
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: false
+
+      - name: Install PlatformIO Core
+        run: |
+          uv pip install --system -U https://github.com/pioarduino/platformio-core/archive/refs/tags/v6.1.19.zip
+          # See quartzink-firmware.yml: platform-espressif32 imports these unconditionally.
+          uv pip install --system -U "littlefs-python>=0.16.0" "fatfs-ng>=0.1.14" "pyyaml>=6.0.2" \
+            "rich-click>=1.8.6" "zopfli>=0.2.2" "intelhex>=2.3.0" "rich>=14.0.0" "urllib3<2" \
+            "cryptography>=45.0.3" "certifi>=2025.8.3" "ecdsa>=0.19.1" "bitstring>=4.3.1" \
+            "reedsolo>=1.5.3,<1.8" "esp-idf-size>=2.0.0" "esp-coredump>=1.14.0"
+
+      - name: Pin pioarduino core inside the platform penv
+        run: |
+          set -euo pipefail
+          # See quartzink-firmware.yml and
+          # https://github.com/pioarduino/platform-espressif32/issues/529
+          pio pkg install -e "$PIO_ENV"
+          uv pip install --python ~/.platformio/penv/bin/python "pioarduino==6.1.19"
+          ~/.platformio/penv/bin/pio --version
+
+      - name: Build firmware
+        run: pio run -e "$PIO_ENV"
+
+      - name: Name the firmware file
+        id: asset
+        run: |
+          asset="quartzink-${VERSION}-${{ matrix.device }}.bin"
+          cp ".pio/build/${PIO_ENV}/firmware.bin" "$asset"
+          echo "name=$asset" >> "$GITHUB_OUTPUT"
+
+      - name: Build license file
+        if: matrix.device == 'x3-x4'
+        run: python3 scripts/build_release_license.py --env "$PIO_ENV" --output dist/LICENSE
+
+      - name: Keep license file
+        if: matrix.device == 'x3-x4'
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-license
+          path: dist/LICENSE
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Keep firmware file
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.asset.outputs.name }}
+          path: ${{ steps.asset.outputs.name }}
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  publish:
+    name: Attach firmware to the release
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: quartzink-*.bin
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-license
+          path: dist
+
+      - name: Attach files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          for device in x3-x4 x4pro picco; do
+            test -f "dist/quartzink-${version}-${device}.bin"
+          done
+          test -s dist/LICENSE
+          gh release upload "$RELEASE_TAG" dist/quartzink-*.bin dist/LICENSE \
+            --repo "$GITHUB_REPOSITORY" --clobber

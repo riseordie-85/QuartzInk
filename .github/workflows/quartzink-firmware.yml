@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         # Short board-specific names keep pull-request artifacts easy to identify.
-        # The release workflow applies the published crosspoint-<version>-<device>.bin names.
+        # Tagged releases are built by quartzink-release.yml (quartzink-<version>-<device>.bin).
         include:
           - env: default
             device: x3-x4

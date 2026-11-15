@@ -107,15 +107,33 @@ sync and more) is still here; see the [User Guide](./USER_GUIDE.md) and the [doc
 
 ## Install
 
-GitHub Actions builds QuartzInk on every push to this repository:
+The easiest way is https://quartz.timcordova.com/flash/ in Chrome or Edge: pick your reader, plug it in over
+USB-C and press **Install**. It installs the newest build of `main`.
 
-1. Open the repo's **Actions** tab and pick the newest green **QuartzInk firmware** run.
-2. Download the artifact for your device from **Artifacts**: `quartzink-x4-pro-<commit>`,
-   `quartzink-x3-x4-<commit>` or `quartzink-picco-<commit>`.
-3. Unzip it, connect the device over USB-C, go to https://crosspointreader.com/#flash-tools, select your device,
-   click **Custom .bin** and upload the firmware file.
+- **Releases:** numbered versions are on the repo's **Releases** page as `quartzink-<version>-<device>.bin`
+  (`x3-x4`, `x4pro` or `picco`). Install one from the install page under "Install a .bin file of your own".
+- **Updates:** once a reader runs a build from version 1.0.0 on, the X3/X4 and X4 Pro can update themselves from
+  **Settings → System → Check for updates**, which uses QuartzInk's releases. The Boox Picco updates over USB.
+  Builds made before the 1.0.0 release (they show version 2.0.0) check upstream CrossPoint instead, so install
+  a newer build over USB once.
+- **Every push:** each run of **QuartzInk firmware** on the **Actions** tab has the builds as artifacts
+  (`quartzink-x3-x4-<commit>`, `quartzink-x4-pro-<commit>`, `quartzink-picco-<commit>`), and pushes to `main`
+  replace the `latest-build` pre-release that the install page uses. These use `x4-pro` in the name; releases
+  use `x4pro`.
 
-To go back to CrossPoint, flash an official release from the same page.
+To go back to CrossPoint, flash an official CrossPoint release.
+
+### Publishing a release
+
+1. Set `version` in `platformio.ini` (under `[crosspoint]`) to the new version and push it.
+2. On GitHub, open **Releases → Draft a new release**, create the tag `v<version>` (for example `v1.0.0`)
+   on `main`, write the notes and press **Publish release**.
+3. **QuartzInk release** builds the three readers' firmware and attaches it to the release a few minutes later.
+   It stops with an error if the tag and `version` don't match. Then fix the version, delete the release **and its
+   tag** (Releases → Tags), and publish again.
+
+Pre-releases are not built. To test-build the release firmware without publishing, run **QuartzInk release**
+from the **Actions** tab.
 
 ### USB-locked devices
 
