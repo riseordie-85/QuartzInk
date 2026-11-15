@@ -99,7 +99,7 @@ sync and more) is still here; see the [User Guide](./USER_GUIDE.md) and the [doc
 ## Install
 
 The easiest way is https://quartz.timcordova.com/flash/ in Chrome or Edge: pick your reader, plug it in over
-USB-C and press **Install**. It installs the newest build of `main`.
+USB-C and press **Install**. It installs the latest release, or the newest build of `main` if you pick it.
 
 - **Releases:** numbered versions are on the repo's **Releases** page as `quartzink-<version>-<device>.bin`
   (`x3-x4`, `x4pro` or `picco`). Install one from the install page under "Install a .bin file of your own".
@@ -109,7 +109,7 @@ USB-C and press **Install**. It installs the newest build of `main`.
   a newer build over USB once.
 - **Every push:** each run of **QuartzInk firmware** on the **Actions** tab has the builds as artifacts
   (`quartzink-x3-x4-<commit>`, `quartzink-x4-pro-<commit>`, `quartzink-picco-<commit>`), and pushes to `main`
-  replace the `latest-build` pre-release that the install page uses. These use `x4-pro` in the name; releases
+  replace the `latest-build` pre-release, the install page's "Newest build". These use `x4-pro` in the name; releases
   use `x4pro`.
 
 To go back to CrossPoint, flash an official CrossPoint release.
