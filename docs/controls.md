@@ -8,7 +8,7 @@ options depend on the device.
 - **Front buttons** contains remapping, orientation, Back behavior, and the two
   long-press settings at the bottom.
 - **Side buttons** contains the reader layout, orientation, page-turn long press,
-  and **Hold Upper / Lower Side Button**, which run an action on any screen
+  and **Hold Left / Right Side Button** (Upper / Lower on the Boox Picco), which run an action on any screen
   (see the User Guide, section 3.6.3).
 - **Taps and gestures** contains **Touch controls while reading** and the page/menu gestures.
 

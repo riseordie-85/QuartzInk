@@ -380,10 +380,14 @@ void forEachBaseSetting(SettingVisitor visit, void* context) {
                                    home_button::KEYS[i], StrId::STR_CAT_CONTROLS));
     }
   }
-  emit(SettingInfo::StaticEnum(StrId::STR_QZ_SIDE_UP_HOLD, &CrossPointSettings::sideUpHoldAction,
-                               home_button::ACTION_LABELS, "sideUpHoldAction", StrId::STR_CAT_CONTROLS));
-  emit(SettingInfo::StaticEnum(StrId::STR_QZ_SIDE_DOWN_HOLD, &CrossPointSettings::sideDownHoldAction,
-                               home_button::ACTION_LABELS, "sideDownHoldAction", StrId::STR_CAT_CONTROLS));
+  // BTN_UP/BTN_DOWN sit above each other on the Picco and left/right on the Xteink readers.
+  const bool stacked = BoardConfig::isPicco();
+  emit(SettingInfo::StaticEnum(stacked ? StrId::STR_QZ_SIDE_UP_HOLD : StrId::STR_QZ_SIDE_LEFT_HOLD,
+                               &CrossPointSettings::sideUpHoldAction, home_button::ACTION_LABELS, "sideUpHoldAction",
+                               StrId::STR_CAT_CONTROLS));
+  emit(SettingInfo::StaticEnum(stacked ? StrId::STR_QZ_SIDE_DOWN_HOLD : StrId::STR_QZ_SIDE_RIGHT_HOLD,
+                               &CrossPointSettings::sideDownHoldAction, home_button::ACTION_LABELS,
+                               "sideDownHoldAction", StrId::STR_CAT_CONTROLS));
 }
 
 size_t countBaseSettings() {

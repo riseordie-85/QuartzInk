@@ -323,7 +323,8 @@ class CrossPointSettings : public PersistableStore<CrossPointSettings> {
   uint8_t sideButtonLayout = PREV_NEXT;
   uint8_t frontButtonFollowOrientation = 0;
   uint8_t sideButtonFollowOrientation = 0;
-  // HomeButtonAction run by holding the upper/lower side button (BTN_UP/BTN_DOWN).
+  // HomeButtonAction run by holding a side button: BTN_UP (left on X3/X4 Pro, upper
+  // on Picco) / BTN_DOWN (right / lower).
   // Ignore keeps the button's normal press-and-hold behavior.
   uint8_t sideUpHoldAction = static_cast<uint8_t>(HomeButtonAction::Ignore);
   uint8_t sideDownHoldAction = static_cast<uint8_t>(HomeButtonAction::Ignore);
